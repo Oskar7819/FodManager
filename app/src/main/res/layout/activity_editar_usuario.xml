@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Layout para la pantalla de edición de un usuario existente.
+     Permite cambiar la aeronave asignada al usuario.
+     El rol se muestra como información pero NO es editable,
+     ya que los roles se asignan al crear el usuario y no se pueden modificar -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <!-- LinearLayout vertical que contiene todos los elementos del formulario -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Título de la pantalla -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Editar Usuario"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Nombre completo del usuario (solo lectura, no editable) -->
+        <TextView
+            android:id="@+id/tvEditarNombre"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Email del usuario (solo lectura, no editable) -->
+        <TextView
+            android:id="@+id/tvEditarEmail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="@android:color/darker_gray"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Etiqueta del campo Rol -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Rol"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Rol actual del usuario (solo lectura, no editable).
+             Se muestra como TextView en lugar de Spinner para dejar claro
+             que el rol no se puede modificar una vez asignado -->
+        <TextView
+            android:id="@+id/tvEditarRol"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Etiqueta del Spinner de aeronave.
+             Se oculta programáticamente para roles que no se adscriben a aeronaves
+             (administrador, focal_point_fod, head_plant) -->
+        <TextView
+            android:id="@+id/tvEditarAeronaveLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Aeronave asignada"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Spinner para seleccionar la aeronave asignada al usuario.
+             Solo visible para roles que se adscriben a aeronaves: operario, mando_gp4, quality.
+             Se oculta programáticamente para administrador, focal_point_fod y head_plant -->
+        <Spinner
+            android:id="@+id/spinnerEditarAeronave"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Botón para guardar los cambios en Supabase -->
+        <Button
+            android:id="@+id/btnGuardarEdicion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Guardar cambios"
+            android:padding="12dp" />
+
+        <!-- Indicador de carga que se muestra mientras se procesa la petición a Supabase.
+             Oculto por defecto (visibility="gone"), se muestra al pulsar Guardar cambios -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="16dp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+</ScrollView>

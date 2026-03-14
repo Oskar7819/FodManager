@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Layout principal de HomeActivity.
+     Contiene dos elementos: el contenedor de fragments y el Bottom Navigation.
+     El LinearLayout vertical divide la pantalla en dos zonas:
+     - Parte superior (fragmentContainer): ocupa todo el espacio disponible
+     - Parte inferior (BottomNavigationView): altura fija según su contenido -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- Contenedor donde se cargan los fragments según la pestaña seleccionada.
+         layout_weight="1" hace que ocupe todo el espacio vertical disponible
+         después de reservar espacio para el BottomNavigationView.
+         layout_height="0dp" es necesario para que layout_weight funcione correctamente.
+         Los fragments que se cargan aquí son:
+         - HomeFragment (Dashboard)
+         - InspeccionesFragment
+         - IncidenciasFragment
+         - AeronaveFragment
+         - UsuariosFragment -->
+    <FrameLayout
+        android:id="@+id/fragmentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Barra de navegación inferior con 5 pestañas.
+         app:menu referencia el archivo res/menu/bottom_nav_menu.xml
+         donde están definidas las pestañas y sus iconos.
+         La pestaña "Usuarios" está oculta por defecto en el XML y se muestra
+         programáticamente en HomeActivity según el rol del usuario -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigationView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:menu="@menu/bottom_nav_menu" />
+
+</LinearLayout>

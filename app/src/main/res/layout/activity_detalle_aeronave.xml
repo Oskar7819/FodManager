@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Layout para la pantalla de detalle de una aeronave.
+     Muestra la información de la aeronave, sus usuarios adscritos
+     y el botón para marcarla como inactiva (solo para roles con permiso) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Modelo de la aeronave (ej: A320, A400M) -->
+    <TextView
+        android:id="@+id/tvDetalleAeronaveModelo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="4dp" />
+
+    <!-- Número de serie de la aeronave (ej: S/N: MSN0001) -->
+    <TextView
+        android:id="@+id/tvDetalleAeronaveNumeroSerie"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="@android:color/darker_gray"
+        android:layout_marginBottom="4dp" />
+
+    <!-- Ubicación física de la aeronave dentro del hangar -->
+    <TextView
+        android:id="@+id/tvDetalleAeronaveUbicacion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="@android:color/darker_gray"
+        android:layout_marginBottom="4dp" />
+
+    <!-- Estado de la aeronave: 🟢 Activa o 🔴 Inactiva -->
+    <TextView
+        android:id="@+id/tvDetalleAeronaveEstado"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Título de la sección de usuarios adscritos -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Usuarios adscritos"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Botón para marcar la aeronave como inactiva cuando se va del hangar.
+         Oculto por defecto (visibility="gone"), solo se muestra para los roles
+         administrador y focal_point_fod si la aeronave está activa.
+         Una vez inactiva no se puede reactivar, se registra como nueva aeronave si vuelve -->
+    <Button
+        android:id="@+id/btnDesactivarAeronave"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🔴 Marcar como inactiva"
+        android:layout_marginBottom="16dp"
+        android:visibility="gone" />
+
+    <!-- Lista de usuarios adscritos a esta aeronave.
+         layout_weight="1" hace que ocupe todo el espacio vertical disponible.
+         layout_height="0dp" es necesario para que layout_weight funcione correctamente -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerUsuariosAeronave"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+</LinearLayout>

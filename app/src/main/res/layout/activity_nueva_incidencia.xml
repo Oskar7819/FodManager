@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Layout para el formulario de registro de una nueva incidencia FOD.
+     Se accede desde DetalleInspeccionActivity cuando se detecta un FOD.
+     ScrollView permite desplazamiento si el teclado ocupa parte de la pantalla -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <!-- LinearLayout vertical que contiene todos los campos del formulario -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Título del formulario -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nueva Incidencia FOD"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Campo para describir el objeto encontrado o el daño detectado.
+             Campo obligatorio, se valida en NuevaIncidenciaActivity.
+             inputType="textMultiLine" permite escribir varias líneas.
+             minLines="3" reserva espacio mínimo para 3 líneas de texto -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Descripción del FOD"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="16dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etDescripcion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textMultiLine"
+                android:minLines="3" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Etiqueta del Spinner de tipo de FOD -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tipo de FOD"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Spinner para clasificar el tipo de FOD según el ENUM tipo_fod de Supabase:
+             ambiental, herramientas, restos_metalicos, material_consumo,
+             personal, procedente_aeronave -->
+        <Spinner
+            android:id="@+id/spinnerTipoFod"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Campo para especificar la zona del avión donde se encontró el FOD.
+             Campo opcional (ej: tren de aterrizaje, cabina, motor) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Zona del avión"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="16dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etZonaAvion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Campo para el número de empleado del operario que encontró el FOD.
+             Campo opcional -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Número de empleado"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginBottom="16dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etNumeroEmpleado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Etiqueta de la sección de foto -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Foto del FOD"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Botón para abrir la cámara del dispositivo y capturar una foto del FOD.
+             La foto es obligatoria para guardar la incidencia -->
+        <Button
+            android:id="@+id/btnTomarFoto"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📷 Tomar foto"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Vista previa de la foto capturada con la cámara.
+             Oculta por defecto (visibility="gone"), se muestra al tomar la foto.
+             scaleType="centerCrop" recorta la imagen para llenar el espacio sin deformarla -->
+        <ImageView
+            android:id="@+id/imgPreview"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Botón para guardar la incidencia en Supabase.
+             Se deshabilita mientras se procesa la petición para evitar duplicados -->
+        <Button
+            android:id="@+id/btnGuardar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Guardar incidencia"
+            android:padding="12dp" />
+
+        <!-- Indicador de carga que se muestra mientras se sube la foto
+             a Supabase Storage y se inserta la incidencia en la base de datos.
+             Oculto por defecto (visibility="gone") -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="16dp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+</ScrollView>

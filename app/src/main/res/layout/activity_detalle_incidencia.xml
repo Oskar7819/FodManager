@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Layout para la pantalla de detalle de una incidencia FOD.
+     Usa ScrollView para permitir desplazamiento vertical cuando el contenido
+     no cabe en la pantalla (especialmente con la foto) -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <!-- LinearLayout vertical que contiene todos los elementos del detalle -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Nombre de la aeronave donde se encontró el FOD (modelo - número de serie) -->
+        <TextView
+            android:id="@+id/tvDetalleIncidenciaAeronave"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Estado actual de la incidencia con emoji de color:
+             🔴 Abierta, 🟡 En proceso, 🟢 Cerrada -->
+        <TextView
+            android:id="@+id/tvDetalleIncidenciaEstado"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Fecha y hora de registro de la incidencia en formato dd/mm/yyyy HH:mm -->
+        <TextView
+            android:id="@+id/tvDetalleIncidenciaFecha"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="@android:color/darker_gray"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Etiqueta de sección para el tipo de FOD -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tipo de FOD"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Clasificación del FOD según el ENUM tipo_fod con emoji descriptivo -->
+        <TextView
+            android:id="@+id/tvDetalleIncidenciaTipoFod"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Etiqueta de sección para la descripción -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Descripción"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Descripción detallada del FOD introducida por el operario -->
+        <TextView
+            android:id="@+id/tvDetalleIncidenciaDescripcion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Etiqueta de sección para la zona del avión -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Zona del avión"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Zona específica del avión donde se encontró el FOD -->
+        <TextView
+            android:id="@+id/tvDetalleIncidenciaZona"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Etiqueta de sección para el número de empleado -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Número de empleado"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Número de empleado del operario que detectó el FOD -->
+        <TextView
+            android:id="@+id/tvDetalleIncidenciaEmpleado"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Etiqueta de sección para la foto -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Foto del FOD"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Imagen de la foto del FOD cargada desde Supabase Storage usando Glide.
+             Oculta por defecto (visibility="gone"), se muestra solo si hay imagen.
+             scaleType="centerCrop" recorta la imagen para llenar el espacio sin deformarla -->
+        <ImageView
+            android:id="@+id/imgDetalleIncidencia"
+            android:layout_width="match_parent"
+            android:layout_height="250dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Mensaje alternativo cuando no hay foto disponible.
+             Oculto por defecto, se muestra solo si imagenUrl es null o vacía -->
+        <TextView
+            android:id="@+id/tvSinFoto"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sin foto disponible"
+            android:textColor="@android:color/darker_gray"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Contenedor horizontal con los botones de cambio de estado.
+             Oculto por defecto (visibility="gone"), solo visible para roles con permiso
+             (administrador, mando_gp4, quality) y cuando la incidencia no está cerrada -->
+        <LinearLayout
+            android:id="@+id/llBotonesEstado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="16dp"
+            android:visibility="gone">
+
+            <!-- Botón para pasar el estado de "abierta" a "en_proceso".
+                 layout_weight="1" hace que ambos botones ocupen el mismo ancho.
+                 Oculto por defecto, solo visible cuando el estado es "abierta" -->
+            <Button
+                android:id="@+id/btnEnProceso"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="🟡 En proceso"
+                android:layout_marginEnd="8dp"
+                android:visibility="gone" />
+
+            <!-- Botón para cerrar la incidencia (pasar a estado "cerrada").
+                 Visible cuando el estado es "abierta" o "en_proceso" -->
+            <Button
+                android:id="@+id/btnCerrar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="🟢 Cerrar" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

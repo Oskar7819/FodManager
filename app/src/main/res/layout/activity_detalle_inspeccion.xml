@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Layout para la pantalla de detalle de una inspección FOD.
+     Usa ScrollView para permitir desplazamiento vertical si el contenido
+     no cabe en la pantalla -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <!-- LinearLayout vertical que contiene todos los elementos del detalle -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Zona del hangar o aeronave donde se realizó la inspección -->
+        <TextView
+            android:id="@+id/tvDetalleZona"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Fecha y hora de la inspección en formato dd/mm/yyyy HH:mm -->
+        <TextView
+            android:id="@+id/tvDetalleFecha"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="@android:color/darker_gray"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Indica si se encontró FOD durante la inspección:
+             ⚠️ Con FOD → se detectaron objetos extraños
+             ✅ Sin FOD → inspección limpia -->
+        <TextView
+            android:id="@+id/tvDetalleConFod"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Etiqueta de sección para las observaciones -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Observaciones"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Observaciones adicionales introducidas por el inspector.
+             Muestra "Sin observaciones" si el campo está vacío -->
+        <TextView
+            android:id="@+id/tvDetalleObservaciones"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Etiqueta de sección para el inspector -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Inspector"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Nombre del usuario que realizó la inspección,
+             obtenido mediante una consulta a la tabla "usuarios" usando usuario_id -->
+        <TextView
+            android:id="@+id/tvDetalleUsuario"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp" />
+
+        <!-- Botón para registrar una nueva incidencia FOD asociada a esta inspección.
+             Al pulsarlo abre NuevaIncidenciaActivity pasando el inspeccion_id
+             y aeronave_id para vincular la incidencia con esta inspección -->
+        <Button
+            android:id="@+id/btnNuevaIncidencia"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⚠️ Registrar incidencia FOD"
+            android:layout_marginTop="24dp" />
+
+    </LinearLayout>
+
+</ScrollView>
