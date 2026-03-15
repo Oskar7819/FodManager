@@ -15,7 +15,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
-// Clase de datos que representa la estructura del INSERT en la tabla "aeronaves" de Supabase.
+// Clase de datos que representa la estructura del INSERT en la tabla aeronaves de Supabase.
 // Solo contiene los campos necesarios para crear una nueva aeronave,
 // el ID y created_at los genera Supabase automáticamente.
 @Serializable
@@ -86,7 +86,7 @@ class NuevaAeronaveActivity : AppCompatActivity() {
                     ubicacion = ubicacion.ifEmpty { null }
                 )
 
-                // Inserta la nueva aeronave en la tabla "aeronaves" de Supabase
+                // Inserta la nueva aeronave en la tabla aeronaves de Supabase
                 supabase.postgrest["aeronaves"].insert(nuevaAeronave)
 
                 // runOnUiThread es necesario porque estamos en una corrutina

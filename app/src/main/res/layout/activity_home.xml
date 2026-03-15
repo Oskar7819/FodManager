@@ -29,8 +29,8 @@
     <!-- Barra de navegación inferior con 5 pestañas.
          app:menu referencia el archivo res/menu/bottom_nav_menu.xml
          donde están definidas las pestañas y sus iconos.
-         La pestaña "Usuarios" está oculta por defecto en el XML y se muestra
-         programáticamente en HomeActivity según el rol del usuario -->
+         La pestaña Usuarios está oculta por defecto en el XML y se muestra
+         en HomeActivity según el rol del usuario -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigationView"
         android:layout_width="match_parent"

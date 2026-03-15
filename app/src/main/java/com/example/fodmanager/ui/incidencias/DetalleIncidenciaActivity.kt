@@ -21,7 +21,7 @@ import kotlinx.serialization.Serializable
 import com.example.fodmanager.data.models.UsuarioRol
 import com.example.fodmanager.data.remote.supabase
 
-// Clase de datos usada para actualizar únicamente el campo "estado" de la incidencia en Supabase.
+// Clase de datos usada para actualizar únicamente el campo estado de la incidencia en Supabase.
 // Solo contiene el campo que queremos modificar, evitando enviar datos innecesarios.
 @Serializable
 data class ActualizarEstado(val estado: String)
@@ -29,7 +29,7 @@ data class ActualizarEstado(val estado: String)
 // Activity que muestra el detalle completo de una incidencia FOD:
 // - Aeronave, estado, fecha, tipo de FOD, descripción, zona, empleado y foto
 // - Botones para cambiar el estado (solo para administrador, mando_gp4 y quality)
-// El flujo de estados es: abierta → en_proceso → cerrada (o abierta → cerrada directamente)
+// El flujo de estados es: abierta - en_proceso - cerrada (o abierta - cerrada directamente)
 class DetalleIncidenciaActivity : AppCompatActivity() {
 
     private lateinit var tvAeronave: TextView
@@ -110,7 +110,7 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
 
                 tvAeronave.text = aeronaveTexto
 
-                // Muestra el estado con emoji de color según su valor
+                // Muestra el estado con emoji de color según su valor, en proceso deberia ser amarillo
                 tvEstado.text = when (incidencia.estado) {
                     "abierta" -> "🔴 Abierta"
                     "en_proceso" -> "🟡 En proceso"

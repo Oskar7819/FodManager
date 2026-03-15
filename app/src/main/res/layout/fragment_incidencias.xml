@@ -1,20 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Declaración del documento XML y codificación de caracteres UTF-8 -->
 
-<!--
-    LinearLayout principal que ocupa toda la pantalla.
-    Los elementos internos se organizan en orientación vertical.
--->
+<!-- LinearLayout principal que ocupa toda la pantalla.
+    Los elementos internos se organizan en orientación vertical.   -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <!--
-        RecyclerView que mostrará la lista de incidencias.
+    <!-- RecyclerView que mostrará la lista de incidencias.
         Este componente permite mostrar listas grandes de forma eficiente
-        reutilizando las vistas de los elementos.
-    -->
+        reutilizando las vistas de los elementos.  -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerIncidencias"
         android:layout_width="match_parent"

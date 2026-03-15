@@ -1,27 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Archivo de configuración principal de la app Android.
-     Define permisos, componentes y configuración global de la aplicación -->
+<!-- Archivo de configuración principal de la aplicación,
+     Define permisos, componentes y configuración global -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Permiso para acceder a Internet, necesario para conectarse a Supabase -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Permiso para usar la cámara, necesario para fotografiar incidencias FOD -->
+    <!-- Permiso para usar la cámara, necesario para poder hacer fotos -->
     <uses-permission android:name="android.permission.CAMERA" />
 
-    <!-- Declara que la app usa la cámara pero no la requiere obligatoriamente
-         (android:required="false" permite instalarla en dispositivos sin cámara) -->
+    <!-- Declara que la app usa la cámara pero no la requiere obligatoriamente  -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!--
         Bloque principal de la aplicación.
 
-        allowBackup: permite copias de seguridad de la app.
+        allowBackup: permite copias de seguridad de la aplicación
         dataExtractionRules: reglas de extracción de datos.
         fullBackupContent: reglas de copia de seguridad completa.
         icon: icono principal de la aplicación.
-        label: nombre visible de la aplicación.
+        label: nombre de la aplicación.
         roundIcon: icono redondo para dispositivos compatibles.
         supportsRtl: soporte para idiomas de derecha a izquierda.
         theme: tema visual principal de la aplicación.
@@ -37,7 +36,7 @@
         android:theme="@style/Theme.FodManager">
 
         <!-- Pantalla de Login. Es la Activity principal (LAUNCHER),
-             la primera que se abre al iniciar la app -->
+             lo que se cuando se abre la aplicación -->
         <activity
             android:name=".ui.main.MainActivity"
             android:exported="true">
@@ -60,46 +59,53 @@
             android:exported="false"
             android:parentActivityName=".ui.home.HomeActivity" />
 
-        <!-- Pantalla para ver el detalle de una inspección existente -->
+        <!-- Pantalla para ver el detalle de una inspección existente
+         parentActivityName define a qué pantalla se vuelve al pulsar atrás-->
         <activity
             android:name=".ui.inspecciones.DetalleInspeccionActivity"
             android:exported="false"
             android:parentActivityName=".ui.home.HomeActivity" />
 
-        <!-- Pantalla para registrar una nueva incidencia FOD -->
+        <!-- Pantalla para registrar una nueva incidencia FOD
+         parentActivityName define a qué pantalla se vuelve al pulsar atrás -->
         <activity
             android:name=".ui.incidencias.NuevaIncidenciaActivity"
             android:exported="false"
             android:parentActivityName=".ui.home.HomeActivity" />
 
         <!-- Pantalla para ver el detalle de una incidencia FOD,
-             incluyendo foto, tipo, estado y opciones de cambio de estado -->
+             incluyendo foto, tipo, estado y opciones de cambio de estado
+               parentActivityName define a qué pantalla se vuelve al pulsar atrás -->
         <activity
             android:name=".ui.incidencias.DetalleIncidenciaActivity"
             android:exported="false"
             android:parentActivityName=".ui.home.HomeActivity" />
 
-        <!-- Pantalla para dar de alta una nueva aeronave en el sistema -->
+        <!-- Pantalla para dar de alta una nueva aeronave en el sistema
+         parentActivityName define a qué pantalla se vuelve al pulsar atrás -->
         <activity
             android:name=".ui.aeronaves.NuevaAeronaveActivity"
             android:exported="false"
             android:parentActivityName=".ui.home.HomeActivity" />
 
-        <!-- Pantalla para crear un nuevo usuario en el sistema -->
+        <!-- Pantalla para crear un nuevo usuario en el sistema
+         parentActivityName define a qué pantalla se vuelve al pulsar atrás -->
         <activity
             android:name=".ui.usuarios.NuevoUsuarioActivity"
             android:exported="false"
             android:parentActivityName=".ui.home.HomeActivity" />
 
         <!-- Pantalla para editar un usuario existente,
-             permitiendo cambiar su rol y aeronave asignada -->
+             permitiendo cambiar su rol y aeronave asignada
+              parentActivityName define a qué pantalla se vuelve al pulsar atrás -->
         <activity
             android:name=".ui.usuarios.EditarUsuarioActivity"
             android:exported="false"
             android:parentActivityName=".ui.home.HomeActivity" />
 
         <!-- Pantalla para ver el detalle de una aeronave,
-             incluyendo sus usuarios adscritos y opción de marcarla como inactiva -->
+             incluyendo sus usuarios adscritos y opción de marcarla como inactiva
+              parentActivityName define a qué pantalla se vuelve al pulsar atrás -->
         <activity
             android:name=".ui.aeronaves.DetalleAeronaveActivity"
             android:exported="false"

@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Declaración del documento XML con codificación UTF-8 -->
 
-<!--
-    MaterialCardView utilizada como tarjeta para mostrar
-    la información de un usuario dentro de una lista.
--->
+<!-- MaterialCardView utilizada como tarjeta para mostrar
+    la información de un usuario dentro de una lista. -->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -14,20 +12,15 @@
     app:cardCornerRadius="8dp"
     app:cardElevation="4dp">
 
-    <!--
-        Contenedor interno que organiza los datos
-        del usuario en orientación vertical.
-    -->
+    <!-- Contenedor interno que organiza los datos
+        del usuario en orientación vertical. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!--
-            TextView que muestra el nombre completo del usuario.
-            Se destaca en negrita porque es el dato principal.
-        -->
+        <!--TextView que muestra el nombre completo del usuario.  -->
         <TextView
             android:id="@+id/tvUsuarioNombre"
             android:layout_width="wrap_content"
@@ -36,9 +29,7 @@
             android:textStyle="bold"
             android:layout_marginBottom="4dp" />
 
-        <!--
-            TextView que muestra el correo electrónico del usuario.
-        -->
+        <!-- TextView que muestra el correo electrónico del usuario.  -->
         <TextView
             android:id="@+id/tvUsuarioEmail"
             android:layout_width="wrap_content"
@@ -47,10 +38,7 @@
             android:textColor="@android:color/darker_gray"
             android:layout_marginBottom="4dp" />
 
-        <!--
-            TextView que indica el rol del usuario dentro del sistema
-            (por ejemplo: administrador, técnico, inspector, etc.).
-        -->
+        <!-- TextView que indica el rol del usuario -->
         <TextView
             android:id="@+id/tvUsuarioRol"
             android:layout_width="wrap_content"
@@ -58,9 +46,7 @@
             android:textSize="14sp"
             android:layout_marginBottom="4dp" />
 
-        <!--
-            TextView que muestra el número de empleado asociado al usuario.
-        -->
+        <!-- TextView que muestra el número de empleado del usuario.  -->
         <TextView
             android:id="@+id/tvUsuarioNumeroEmpleado"
             android:layout_width="wrap_content"
@@ -68,10 +54,8 @@
             android:textSize="14sp"
             android:textColor="@android:color/darker_gray" />
 
-        <!--
-            TextView que muestra la aeronave asignada al usuario,
-            en caso de que tenga una asociada.
-        -->
+        <!--TextView que muestra la aeronave asignada al usuario,
+            en caso de que tenga una asociada.  -->
         <TextView
             android:id="@+id/tvUsuarioAeronave"
             android:layout_width="wrap_content"

@@ -23,8 +23,8 @@ import kotlinx.coroutines.launch
 
 // Fragment que muestra la lista de incidencias FOD en el tab "FOD" del Bottom Navigation.
 // Las incidencias mostradas se filtran según el rol del usuario:
-// - rolesGenerales (administrador, head_plant, focal_point_fod) → ven todas las incidencias
-// - Resto de roles (mando_gp4, quality, operario) → solo ven las de su aeronave asignada
+// - rolesGenerales (administrador, head_plant, focal_point_fod)  ven todas las incidencias
+// - Resto de roles (mando_gp4, quality, operario) solo ven las de su aeronave asignada
 class IncidenciasFragment : Fragment() {
 
     private lateinit var recyclerView: RecyclerView

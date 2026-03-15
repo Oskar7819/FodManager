@@ -8,10 +8,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.fodmanager.R
 import com.example.fodmanager.data.models.Aeronave
 
-// Adapter que conecta la lista de aeronaves con el RecyclerView.
-// Un Adapter es el componente que toma los datos de una lista y los convierte
-// en tarjetas visuales (Views) que se muestran en pantalla.
-// Recibe la lista de aeronaves y una función lambda que se ejecuta al pulsar una tarjeta.
+/* Adapter que conecta la lista de aeronaves con el RecyclerView.
+   Un Adapter es el componente que toma los datos de una lista y los convierte
+   en tarjetas visuales que se muestran en pantalla.    */
 class AeronaveAdapter(
     private val aeronaves: MutableList<Aeronave>,
     private val onItemClick: (Aeronave) -> Unit
@@ -27,7 +26,7 @@ class AeronaveAdapter(
     }
 
     // Se llama cuando el RecyclerView necesita crear una nueva tarjeta visual.
-    // Infla (convierte) el layout XML item_aeronave en un objeto View y lo envuelve en un ViewHolder.
+    // Infla el layout XML item_aeronave en un objeto View y lo envuelve en un ViewHolder.
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_aeronave, parent, false)
@@ -44,7 +43,7 @@ class AeronaveAdapter(
         holder.tvNumeroSerie.text = "S/N: ${aeronave.numeroSerie}"
 
         // Si la ubicación es null muestra "Sin ubicación"
-        holder.tvUbicacion.text = "📍 ${aeronave.ubicacion ?: "Sin ubicación"}"
+        holder.tvUbicacion.text = " ${aeronave.ubicacion ?: "Sin ubicación"}"
 
         // Muestra el estado de la aeronave con un emoji de color
         holder.tvEstado.text = if (aeronave.activa) "🟢 Activa" else "🔴 Inactiva"

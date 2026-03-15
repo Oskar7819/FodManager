@@ -58,8 +58,7 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp" />
 
-        <!-- Campo para especificar la zona del avión donde se encontró el FOD.
-             Campo opcional (ej: tren de aterrizaje, cabina, motor) -->
+        <!-- Campo para especificar la zona del avión donde se encontró el FOD -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -73,8 +72,7 @@
                 android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Campo para el número de empleado del operario que encontró el FOD.
-             Campo opcional -->
+        <!-- Campo opcional para el número de empleado del operario que encontró el FOD  -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

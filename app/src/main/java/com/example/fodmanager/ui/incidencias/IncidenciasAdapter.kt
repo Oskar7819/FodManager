@@ -43,7 +43,7 @@ class IncidenciasAdapter(
         val incidencia = incidencias[position]
 
         // Muestra el nombre de la aeronave usando el mapa de aeronaves.
-        // Si no encuentra la aeronave en el mapa muestra "Aeronave desconocida"
+        // Si no encuentra la aeronave en el mapa muestra Aeronave desconocida
         holder.tvAeronave.text = incidencia.aeronaveId?.let {
             aeronavesMap[it] ?: "Aeronave desconocida"
         } ?: "Sin aeronave"

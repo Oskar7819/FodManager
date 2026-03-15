@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Layout de la pantalla de login (MainActivity).
-     LinearLayout vertical centrado con fondo azul aeronáutico.
+     LinearLayout vertical centrado.
      gravity="center" centra todos los elementos tanto horizontal como verticalmente -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -11,8 +11,7 @@
     android:padding="32dp"
     android:background="@color/aeronautics_blue">
 
-    <!-- Logo de la aplicación definido en res/drawable/img_main.png.
-         contentDescription es obligatorio para accesibilidad -->
+    <!-- Logo de la aplicación definido en res/drawable/img_main.png  -->
     <ImageView
         android:id="@+id/imgLogo"
         android:layout_width="150dp"

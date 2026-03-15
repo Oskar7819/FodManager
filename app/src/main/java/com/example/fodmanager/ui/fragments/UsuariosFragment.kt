@@ -24,12 +24,12 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
 
-// Fragment que muestra la lista de usuarios en el tab "Usuarios" del Bottom Navigation.
-// Solo es visible para los roles: administrador, mando_gp4 y focal_point_fod.
-// La lista de usuarios mostrada se filtra según el rol del usuario logueado:
-// - administrador → ve todos los usuarios del sistema
-// - focal_point_fod → ve solo los usuarios con rol mando_gp4 y quality
-// - mando_gp4 → ve solo los operarios adscritos a su misma aeronave
+/* Fragment que muestra la lista de usuarios en el tab Usuarios del Bottom Navigation.
+   Solo es visible para los roles: administrador, mando_gp4 y focal_point_fod.
+   La lista de usuarios mostrada se filtra según el rol del usuario logueado:
+   - administrador  ve todos los usuarios del sistema
+   - focal_point_fod  ve solo los usuarios con rol mando_gp4 y quality
+   - mando_gp4   ve solo los operarios adscritos a su misma aeronave   */
 class UsuariosFragment : Fragment() {
 
     private lateinit var recyclerView: RecyclerView

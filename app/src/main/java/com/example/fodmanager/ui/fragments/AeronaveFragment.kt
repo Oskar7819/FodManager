@@ -29,11 +29,11 @@ import com.example.fodmanager.data.models.Usuario
 @Serializable
 data class UsuarioRol(val rol: String)
 
-// Fragment que muestra la lista de aeronaves en el tab "Aeronaves" del Bottom Navigation.
-// La información mostrada y las acciones disponibles varían según el rol del usuario:
-// - rolesGenerales (administrador, head_plant, focal_point_fod) → ven todas las aeronaves
-// - mando_gp4, quality, operario → solo ven la aeronave a la que están adscritos
-// - rolesConPermiso (administrador, mando_gp4, focal_point_fod) → pueden añadir aeronaves
+/* Fragment que muestra la lista de aeronaves en el tab "Aeronaves" del Bottom Navigation.
+   La información mostrada y las acciones disponibles varían según el rol del usuario:
+   - rolesGenerales (administrador, head_plant, focal_point_fod)  ven todas las aeronaves
+   - mando_gp4, quality, operario  solo ven la aeronave a la que están adscritos
+   - rolesConPermiso (administrador, mando_gp4, focal_point_fod) pueden añadir aeronaves  */
 class AeronaveFragment : Fragment() {
 
     private lateinit var recyclerView: RecyclerView
@@ -41,7 +41,7 @@ class AeronaveFragment : Fragment() {
     private lateinit var fab: FloatingActionButton
     private val aeronaves = mutableListOf<Aeronave>()
 
-    // Roles que pueden dar de alta nuevas aeronaves (ven el botón FAB)
+    // Roles que pueden dar de alta nuevas aeronaves
     private val rolesConPermiso = listOf("administrador", "mando_gp4", "focal_point_fod")
 
     // Roles que ven todas las aeronaves del sistema (visión general)
@@ -65,9 +65,9 @@ class AeronaveFragment : Fragment() {
         recyclerView = view.findViewById(R.id.recyclerAeronaves)
         fab = view.findViewById(R.id.fabNuevaAeronave)
 
-        // Configura el adapter con la lista de aeronaves.
-        // Al pulsar una tarjeta abre DetalleAeronaveActivity pasando los datos
-        // de la aeronave seleccionada mediante el Intent
+        /* Configura el adapter con la lista de aeronaves.
+           Al pulsar una tarjeta abre DetalleAeronaveActivity pasando los datos
+           de la aeronave seleccionada mediante el Intent  */
         adapter = AeronaveAdapter(aeronaves) { aeronave ->
             val intent = Intent(requireContext(), DetalleAeronaveActivity::class.java)
             intent.putExtra("aeronave_id", aeronave.id)
@@ -93,20 +93,20 @@ class AeronaveFragment : Fragment() {
     // onResume se ejecuta cada vez que el fragment vuelve a ser visible,
     // incluyendo cuando se vuelve de DetalleAeronaveActivity.
     // Esto garantiza que la lista se recargue y refleje los cambios
-    // (por ejemplo, una aeronave marcada como inactiva)
+
     override fun onResume() {
         super.onResume()
         cargarDatos()
     }
 
-    // Carga los datos desde Supabase según el rol del usuario logueado
+    // Carga los datos desde Supabase según el rol del usuario
     private fun cargarDatos() {
         lifecycleScope.launch {
             try {
                 // Obtiene el email de la sesión actual de Supabase Auth
                 val email = supabase.auth.currentSessionOrNull()?.user?.email
 
-                // Consulta el usuario logueado en la tabla "usuarios" para obtener su rol
+                // Consulta el usuario logueado en la tabla usuarios para obtener su rol
                 val usuarioLogueado = supabase.postgrest["usuarios"]
                     .select { filter { eq("email", email ?: "") } }
                     .decodeSingle<Usuario>()

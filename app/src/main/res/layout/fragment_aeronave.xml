@@ -1,29 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Declaración del documento XML con codificación UTF-8 -->
 
-<!--
-    LinearLayout principal que ocupa toda la pantalla.
-    Los elementos se organizan en orientación vertical.
--->
+<!--  LinearLayout principal que ocupa toda la pantalla.
+    Los elementos se organizan en orientación vertical.  -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <!--
-        RecyclerView que mostrará la lista de aeronaves.
-        Se usa para listas dinámicas y eficientes.
-    -->
+    <!--  RecyclerView que mostrará la lista de aeronaves -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerAeronaves"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <!--
-        FloatingActionButton para añadir una nueva aeronave.
-        Normalmente aparece como un botón flotante con el símbolo "+".
-    -->
+    <!-- FloatingActionButton para añadir una nueva aeronave  -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabNuevaAeronave"
         android:layout_width="wrap_content"

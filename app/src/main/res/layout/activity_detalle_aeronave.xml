@@ -8,7 +8,7 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <!-- Modelo de la aeronave (ej: A320, A400M) -->
+    <!-- Modelo de la aeronave  -->
     <TextView
         android:id="@+id/tvDetalleAeronaveModelo"
         android:layout_width="wrap_content"
@@ -17,7 +17,7 @@
         android:textStyle="bold"
         android:layout_marginBottom="4dp" />
 
-    <!-- Número de serie de la aeronave (ej: S/N: MSN0001) -->
+    <!-- Número de serie de la aeronave  -->
     <TextView
         android:id="@+id/tvDetalleAeronaveNumeroSerie"
         android:layout_width="wrap_content"
@@ -26,7 +26,7 @@
         android:textColor="@android:color/darker_gray"
         android:layout_marginBottom="4dp" />
 
-    <!-- Ubicación física de la aeronave dentro del hangar -->
+    <!-- Ubicación de la aeronave dentro del hangar -->
     <TextView
         android:id="@+id/tvDetalleAeronaveUbicacion"
         android:layout_width="wrap_content"

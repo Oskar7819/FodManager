@@ -14,19 +14,19 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
-// Clase de datos usada para actualizar únicamente el campo "aeronave_id" del usuario en Supabase.
-// El rol no se puede modificar desde la app una vez creado el usuario,
+// Clase de datos usada para actualizar únicamente el campo aeronave_id del usuario en Supabase.
+// El rol no se puede modificar desde la aplicación una vez creado,
 // por eso solo se actualiza la aeronave asignada.
 @Serializable
 data class ActualizarUsuario(
     val aeronave_id: Int?
 )
 
-// Activity que permite editar la aeronave asignada a un usuario existente.
-// El rol del usuario se muestra como información pero no es editable.
-// Solo los roles que pueden estar adscritos a una aeronave ven el Spinner:
-// mando_gp4, quality y operario.
-// Los roles administrador, focal_point_fod y head_plant no se adscriben a aeronaves.
+/* Activity que permite editar la aeronave asignada a un usuario existente.
+   El rol del usuario se muestra como información pero no es editable.
+   Solo los roles que pueden estar adscritos a una aeronave ven el Spinner:
+   mando_gp4, quality y operario.
+   Los roles administrador, focal_point_fod y head_plant no se adscriben a aeronaves. */
 class EditarUsuarioActivity : AppCompatActivity() {
 
     private lateinit var tvNombre: TextView

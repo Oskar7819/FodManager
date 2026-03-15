@@ -17,10 +17,10 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import kotlinx.coroutines.launch
 
-// Activity de login, es la primera pantalla que ve el usuario al abrir la app.
-// Gestiona la autenticación contra Supabase Auth usando email y contraseña.
-// Una vez autenticado navega a HomeActivity y se destruye a sí misma con finish()
-// para que el usuario no pueda volver a la pantalla de login pulsando atrás.
+/*  Activity de login, es la primera pantalla que  se ve al abrir la aplicación
+    Gestiona la autenticación contra Supabase Auth usando email y contraseña.
+    Una vez autenticado navega a HomeActivity y se destruye a sí misma con finish()
+    para que el usuario no pueda volver a la pantalla de login pulsando atrás. */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var etEmail: TextInputEditText

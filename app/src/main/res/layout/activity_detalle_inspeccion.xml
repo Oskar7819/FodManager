@@ -22,7 +22,7 @@
             android:textStyle="bold"
             android:layout_marginBottom="8dp" />
 
-        <!-- Fecha y hora de la inspección en formato dd/mm/yyyy HH:mm -->
+        <!-- Fecha y hora de la inspección en formato dd/mm/yyyy HH:mm  (automático)-->
         <TextView
             android:id="@+id/tvDetalleFecha"
             android:layout_width="wrap_content"

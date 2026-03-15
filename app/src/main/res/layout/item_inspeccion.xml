@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Declaración del documento XML con codificación UTF-8 -->
 
-<!--
-    MaterialCardView utilizada como tarjeta para mostrar
-    la información de una inspección dentro de una lista.
--->
+<!-- MaterialCardView utilizada como tarjeta para mostrar
+    la información de una inspección dentro de una lista. -->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -14,20 +12,14 @@
     app:cardCornerRadius="8dp"
     app:cardElevation="4dp">
 
-    <!--
-        Contenedor interno que organiza los datos
-        de la inspección en orientación vertical.
-    -->
+    <!-- Contenedor interno que organiza los datos de la inspección en orientación vertical. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!--
-            TextView que muestra la zona donde se realizó la inspección.
-            Es el dato principal por eso aparece en negrita.
-        -->
+        <!--TextView que muestra la zona donde se realizó la inspección. -->
         <TextView
             android:id="@+id/tvZona"
             android:layout_width="wrap_content"
@@ -36,9 +28,7 @@
             android:textStyle="bold"
             android:layout_marginBottom="4dp" />
 
-        <!--
-            TextView que indica la aeronave asociada a la inspección.
-        -->
+        <!-- TextView que indica la aeronave asociada a la inspección. -->
         <TextView
             android:id="@+id/tvAeronave"
             android:layout_width="wrap_content"
@@ -47,9 +37,7 @@
             android:textColor="@android:color/darker_gray"
             android:layout_marginBottom="4dp" />
 
-        <!--
-            TextView que muestra la fecha en la que se realizó la inspección.
-        -->
+        <!-- TextView que muestra la fecha en la que se realizó la inspección.  -->
         <TextView
             android:id="@+id/tvFecha"
             android:layout_width="wrap_content"
@@ -58,10 +46,7 @@
             android:textColor="@android:color/darker_gray"
             android:layout_marginBottom="4dp" />
 
-        <!--
-            TextView que indica si durante la inspección se detectó FOD
-            (Foreign Object Debris).
-        -->
+        <!-- TextView que indica si durante la inspección se detectó FOD  -->
         <TextView
             android:id="@+id/tvConFod"
             android:layout_width="wrap_content"

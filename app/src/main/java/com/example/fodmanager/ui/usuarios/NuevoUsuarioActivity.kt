@@ -19,7 +19,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
-// Clase de datos que representa la estructura del INSERT en la tabla "usuarios" de Supabase.
+// Clase de datos que representa la estructura del INSERT en la tabla usuarios de Supabase.
 // Contiene todos los campos necesarios para crear un nuevo usuario en el sistema.
 @Serializable
 data class NuevoUsuario(
@@ -37,11 +37,11 @@ data class NuevoUsuario(
     val aeronave_id: Int? = null
 )
 
-// Activity que muestra el formulario para crear un nuevo usuario en el sistema.
-// Los roles disponibles en el Spinner varían según el rol del usuario logueado:
-// - administrador → puede crear cualquier rol
-// - focal_point_fod → puede crear mando_gp4 y quality
-// - mando_gp4 → solo puede crear operarios
+// Activity que muestra el formulario para crear un nuevo usuario.
+// Los roles disponibles en el Spinner varían según el rol del usuario:
+// - administrador puede crear cualquier rol
+// - focal_point_fod puede crear mando_gp4 y quality
+// - mando_gp4 solo puede crear operarios
 // El Spinner de aeronave solo aparece para roles que se adscriben a aeronaves:
 // operario, mando_gp4 y quality
 class NuevoUsuarioActivity : AppCompatActivity() {
@@ -57,7 +57,7 @@ class NuevoUsuarioActivity : AppCompatActivity() {
     private lateinit var btnGuardar: Button
     private lateinit var progressBar: ProgressBar
 
-    // Lista mutable de roles disponibles, se rellena según el rol del usuario logueado
+    // Lista mutable de roles disponibles, se rellena según el rol del usuario
     private val roles = mutableListOf<String>()
     // Roles que pueden estar adscritos a una aeronave y por tanto ven el Spinner de aeronave
     private val rolesConAeronave = listOf("operario", "mando_gp4", "quality")
@@ -103,14 +103,14 @@ class NuevoUsuarioActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
 
-        // Carga los roles disponibles según el rol del usuario logueado
+        // Carga los roles disponibles según el rol del usuario
         // antes de mostrar el formulario
         cargarRolesSegunUsuario()
 
         btnGuardar.setOnClickListener { guardarUsuario() }
     }
 
-    // Consulta el rol del usuario logueado y determina qué roles puede crear
+    // Consulta el rol del usuario y determina qué roles puede crear
     private fun cargarRolesSegunUsuario() {
         lifecycleScope.launch {
             try {
@@ -147,9 +147,9 @@ class NuevoUsuarioActivity : AppCompatActivity() {
         }
     }
 
-    // Carga las aeronaves activas desde Supabase y las muestra en el Spinner.
-    // Solo carga aeronaves activas ya que no tiene sentido asignar
-    // un usuario a una aeronave que ya se ha ido del hangar
+    /* Carga las aeronaves activas desde Supabase y las muestra en el Spinner.
+       Solo carga aeronaves activas ya que no tiene sentido asignar
+       un usuario a una aeronave que ya se ha ido del hangar   */
     private fun cargarAeronaves() {
         lifecycleScope.launch {
             try {

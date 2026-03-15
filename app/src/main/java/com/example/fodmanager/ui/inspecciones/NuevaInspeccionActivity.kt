@@ -139,7 +139,7 @@ class NuevaInspeccionActivity : AppCompatActivity() {
                     ubicacion_aeronave = ubicacionAeronave.ifEmpty { null }
                 )
 
-                // Inserta la nueva inspección en la tabla "inspecciones" de Supabase
+                // Inserta la nueva inspección en la tabla inspecciones de Supabase
                 supabase.postgrest["inspecciones"].insert(nuevaInspeccion)
 
                 runOnUiThread {

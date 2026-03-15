@@ -1,28 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Declaración del documento XML y codificación UTF-8 -->
 
-<!--
-    ScrollView principal para permitir desplazamiento vertical
-    en caso de que el contenido no quepa en la pantalla.
--->
+<!-- ScrollView principal para permitir desplazamiento vertical
+    en caso de que el contenido no quepa en la pantalla.     -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp">
 
-    <!--
-        Contenedor principal que organiza todos los elementos
-        en una columna vertical.
-    -->
+    <!-- Contenedor principal que organiza todos los elementos en una columna vertical. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!--
-            TextView que mostrará el mensaje de bienvenida al usuario.
-            El texto se establece normalmente desde el código Java/Kotlin.
-        -->
+        <!-- TextView que mostrará el mensaje de bienvenida al usuario.
+            El texto se establece normalmente desde el código Java/Kotlin.   -->
         <TextView
             android:id="@+id/tvBienvenida"
             android:layout_width="wrap_content"
@@ -32,10 +25,8 @@
             android:layout_marginBottom="16dp" />
 
         <!-- Tarjeta inspecciones -->
-        <!--
-            MaterialCardView que muestra información relacionada
-            con el número total de inspecciones realizadas.
-        -->
+        <!--MaterialCardView que muestra información relacionada
+            con el número total de inspecciones realizadas.  -->
         <com.google.android.material.card.MaterialCardView
             xmlns:app="http://schemas.android.com/apk/res-auto"
             android:layout_width="match_parent"
@@ -128,9 +119,7 @@
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Tarjeta aeronaves -->
-        <!--
-            MaterialCardView que muestra el número total de aeronaves activas.
-        -->
+        <!-- MaterialCardView que muestra el número total de aeronaves activas. -->
         <com.google.android.material.card.MaterialCardView
             xmlns:app="http://schemas.android.com/apk/res-auto"
             android:layout_width="match_parent"
@@ -167,10 +156,8 @@
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Últimas inspecciones -->
-        <!--
-            Tarjeta que mostrará dinámicamente las inspecciones
-            realizadas en los últimos 5 días.
-        -->
+        <!--  Tarjeta que mostrará dinámicamente las inspecciones
+            realizadas en los últimos 5 días.   -->
         <com.google.android.material.card.MaterialCardView
             xmlns:app="http://schemas.android.com/apk/res-auto"
             android:layout_width="match_parent"
@@ -195,10 +182,8 @@
                     android:textStyle="bold"
                     android:layout_marginBottom="8dp" />
 
-                <!--
-                    Contenedor donde se añadirán dinámicamente las inspecciones
-                    recientes desde el código Java/Kotlin.
-                -->
+                <!-- Contenedor donde se añadirán dinámicamente las inspecciones
+                    recientes desde el código Java/Kotlin.  -->
                 <LinearLayout
                     android:id="@+id/llUltimasInspecciones"
                     android:layout_width="match_parent"

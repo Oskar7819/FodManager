@@ -21,15 +21,15 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
-// Clase de datos usada para actualizar el campo "activa" de la aeronave en Supabase.
+// Clase de datos usada para actualizar el campo activa de la aeronave en Supabase.
 // Solo contiene el campo que queremos modificar, evitando enviar datos innecesarios.
 @Serializable
 data class ActualizarAeronave(val activa: Boolean)
 
-// Activity que muestra el detalle de una aeronave:
-// - Información general (modelo, número de serie, ubicación, estado)
-// - Lista de usuarios adscritos a esa aeronave
-// - Botón para marcar la aeronave como inactiva (solo para administrador y focal_point_fod)
+/* Activity que muestra el detalle de una aeronave:
+   - Información general (modelo, número de serie, ubicación, estado)
+   - Lista de usuarios adscritos a esa aeronave
+ - Botón para marcar la aeronave como inactiva (solo para administrador y focal_point_fod)   */
 class DetalleAeronaveActivity : AppCompatActivity() {
 
     private lateinit var tvModelo: TextView
@@ -62,7 +62,7 @@ class DetalleAeronaveActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recyclerUsuariosAeronave)
 
         // Recupera los datos de la aeronave enviados desde AeronaveFragment
-        // mediante el Intent (mecanismo de comunicación entre pantallas en Android)
+        // mediante el Intent
         aeronaveId = intent.getIntExtra("aeronave_id", -1)
         val modelo = intent.getStringExtra("aeronave_modelo") ?: ""
         val numeroSerie = intent.getStringExtra("aeronave_numero_serie") ?: ""
@@ -72,7 +72,7 @@ class DetalleAeronaveActivity : AppCompatActivity() {
         // Muestra los datos de la aeronave en los TextViews
         tvModelo.text = modelo
         tvNumeroSerie.text = "S/N: $numeroSerie"
-        tvUbicacion.text = "📍 $ubicacion"
+        tvUbicacion.text = " $ubicacion"
         tvEstado.text = if (aeronaveActiva) "🟢 Activa" else "🔴 Inactiva"
 
         // Crea el mapa de aeronaves para el adapter de usuarios
@@ -117,7 +117,7 @@ class DetalleAeronaveActivity : AppCompatActivity() {
     }
 
     // Carga desde Supabase los usuarios adscritos a esta aeronave
-    // filtrando por aeronave_id en la tabla "usuarios"
+    // filtrando por aeronave_id en la tabla usuarios
     private fun cargarUsuarios(aeronaveId: Int) {
         lifecycleScope.launch {
             try {
@@ -141,18 +141,18 @@ class DetalleAeronaveActivity : AppCompatActivity() {
 
     // Marca la aeronave como inactiva en Supabase y desasigna a todos sus usuarios.
     // Esto ocurre cuando la aeronave abandona el hangar.
-    // Una vez inactiva no se puede reactivar; si vuelve se registra como nueva aeronave.
+    // Una vez inactiva no se puede reactivar; si vuelve se registra como nueva aeronave para no mezclar datos de los dos eventos
     private fun desactivarAeronave() {
         lifecycleScope.launch {
             try {
-                // Actualiza el campo "activa" a false en la tabla "aeronaves"
+                // Actualiza el campo activa a false en la tabla aeronaves
                 supabase.postgrest["aeronaves"]
                     .update(ActualizarAeronave(activa = false)) {
                         filter { eq("id", aeronaveId) }
                     }
 
                 // Desasigna todos los usuarios adscritos a esta aeronave
-                // poniendo su aeronave_id a null en la tabla "usuarios"
+                // poniendo su aeronave_id a null en la tabla usuarios
                 supabase.postgrest["usuarios"]
                     .update(mapOf("aeronave_id" to null)) {
                         filter { eq("aeronave_id", aeronaveId) }
@@ -176,7 +176,7 @@ class DetalleAeronaveActivity : AppCompatActivity() {
         }
     }
 
-    // Gestiona el botón de atrás de la ActionBar (flecha arriba izquierda)
+    // Gestiona el botón de atrás de la ActionBar
     // devolviendo RESULT_OK para que el fragment recargue la lista de aeronaves
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {

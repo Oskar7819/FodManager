@@ -18,13 +18,13 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 // Clase auxiliar para deserializar únicamente el rol del usuario desde Supabase
-// Se usa para verificar si debe mostrarse la pestaña de Usuarios en el Bottom Navigation
+// Se usa para verificar si debe mostrarse la pestaña de Usuarios en el Bottom Navigation (FAB)
 @Serializable
 data class UsuarioRolHome(val rol: String)
 
-// Activity principal de la app tras el login.
+// Activity principal de la aplicación despues del login.
 // Contiene el Bottom Navigation con 5 pestañas y gestiona la navegación entre fragments.
-// La pestaña "Usuarios" solo es visible para los roles: administrador, mando_gp4 y focal_point_fod
+// La pestaña Usuarios solo es visible para los roles: administrador, mando_gp4 y focal_point_fod
 class HomeActivity : AppCompatActivity() {
 
     // Roles que pueden ver y gestionar la sección de usuarios

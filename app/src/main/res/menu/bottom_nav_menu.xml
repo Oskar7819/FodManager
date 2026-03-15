@@ -1,51 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Declaración del documento XML con codificación UTF-8 -->
 
-<!--
-    Menú de navegación de la aplicación.
-    Define los elementos que aparecerán en el menú lateral
-    o en el Navigation Drawer de la app.
--->
+<!--  Menú de navegación de la aplicación.
+    Define los elementos que aparecerán en el FAB -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!--
-        Opción del menú para acceder a la pantalla principal (Inicio).
-    -->
+    <!--  Opción del menú para acceder a la pantalla principal (Inicio)  -->
     <item
         android:id="@+id/nav_home"
         android:icon="@android:drawable/ic_menu_compass"
-        android:title="Inicio" />
+        android:title="Dashboard" />
 
-    <!--
-        Opción del menú para acceder a la sección de inspecciones.
-    -->
+    <!--  Opción del menú para acceder a la sección de inspecciones -->
     <item
         android:id="@+id/nav_inspecciones"
         android:icon="@android:drawable/ic_menu_search"
         android:title="Inspecciones" />
 
-    <!--
-        Opción del menú para acceder a la gestión de incidencias FOD
-        (Foreign Object Debris).
-    -->
+    <!--   Opción del menú para acceder a la gestión de incidencias FOD  -->
     <item
         android:id="@+id/nav_incidencias"
         android:icon="@android:drawable/ic_dialog_alert"
         android:title="FOD" />
 
-    <!--
-        Opción del menú para visualizar la lista de aeronaves.
-    -->
+    <!--  Opción del menú para visualizar la lista de aeronaves  -->
     <item
         android:id="@+id/nav_aeronaves"
         android:icon="@android:drawable/ic_menu_mapmode"
         android:title="Aeronaves" />
 
-    <!--
-        Opción del menú para acceder a la gestión de usuarios.
-        Está oculta por defecto (visible="false"), probablemente
-        solo se muestra para administradores.
-    -->
+    <!-- Opción del menú para acceder a la gestión de usuarios, solo para roles autorizados -->
     <item
         android:id="@+id/nav_usuarios"
         android:icon="@android:drawable/ic_menu_manage"

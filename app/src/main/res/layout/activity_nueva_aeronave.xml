@@ -37,7 +37,7 @@
                 android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Campo para el número de serie de la aeronave (ej: MSN0001).
+        <!-- Campo para el número de serie de la aeronave.
              Campo obligatorio, se valida en NuevaAeronaveActivity -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"

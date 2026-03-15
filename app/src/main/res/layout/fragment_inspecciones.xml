@@ -1,30 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Declaración del documento XML y codificación UTF-8 -->
 
-<!--
-    LinearLayout principal que ocupa toda la pantalla.
-    Organiza los elementos en orientación vertical.
--->
+<!-- LinearLayout principal que ocupa toda la pantalla.
+    Organiza los elementos en orientación vertical.   -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="8dp">
 
-    <!--
-        RecyclerView que mostrará la lista de inspecciones.
-        Se utiliza para mostrar listas dinámicas de forma eficiente.
-    -->
+    <!-- RecyclerView que mostrará la lista de inspecciones.
+        Se utiliza para mostrar listas dinámicas de forma eficiente.  -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerInspecciones"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <!--
-        FloatingActionButton que permite crear una nueva inspección.
-        Se muestra como un botón flotante con el icono "+".
-    -->
+    <!--  FloatingActionButton que permite crear una nueva inspección  -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabNuevaInspeccion"
         android:layout_width="wrap_content"

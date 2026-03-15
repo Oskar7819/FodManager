@@ -25,10 +25,10 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
 
-// Fragment que muestra la lista de inspecciones en el tab "Inspecciones" del Bottom Navigation.
-// Las inspecciones mostradas se filtran según el rol del usuario:
-// - rolesGenerales (administrador, head_plant, focal_point_fod) → ven todas las inspecciones
-// - Resto de roles (mando_gp4, quality, operario) → solo ven las de su aeronave asignada
+/*  Fragment que muestra la lista de inspecciones en el tab Inspecciones del Bottom Navigation.
+    Las inspecciones mostradas se filtran según el rol del usuario:
+    - rolesGenerales (administrador, head_plant, focal_point_fod) ven todas las inspecciones
+    - Resto de roles (mando_gp4, quality, operario) → solo ven las de su aeronave asignada  */
 class InspeccionesFragment : Fragment() {
 
     private lateinit var recyclerView: RecyclerView

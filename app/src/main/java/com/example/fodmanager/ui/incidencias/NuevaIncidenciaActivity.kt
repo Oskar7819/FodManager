@@ -54,7 +54,7 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var spinnerTipoFod: Spinner
 
-    // Almacena el bitmap de la foto capturada antes de subirla a Supabase Storage
+    // Almacena el bitmap de la foto antes de subirla a Supabase Storage
     private var fotoBitmap: Bitmap? = null
     private var inspeccionId: Int = -1
     private var aeronaveId: Int? = null
@@ -193,10 +193,10 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
                     .select { filter { eq("email", email ?: "") } }
                     .decodeSingle<UsuarioId>()
 
-                // Convierte el Bitmap a array de bytes JPEG con calidad 80%
+                // Convierte el Bitmap a array de bytes JPEG con calidad 50%
                 // para subirlo a Supabase Storage
                 val stream = ByteArrayOutputStream()
-                fotoBitmap!!.compress(Bitmap.CompressFormat.JPEG, 80, stream)
+                fotoBitmap!!.compress(Bitmap.CompressFormat.JPEG, 50, stream)
                 val bytes = stream.toByteArray()
 
                 // Genera un nombre único para el archivo usando UUID

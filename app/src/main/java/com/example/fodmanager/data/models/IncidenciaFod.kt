@@ -3,7 +3,7 @@ package com.example.fodmanager.data.models
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-// Clase que representa una incidencia FOD (Foreign Object Debris/Damage)
+// Clase que representa una incidencia FOD (Foreign Object Damage)
 // Se mapea directamente con la tabla "incidencias_fod" de Supabase
 @Serializable
 data class IncidenciaFod(
@@ -19,25 +19,25 @@ data class IncidenciaFod(
     // ID del usuario que registró la incidencia (puede ser null)
     @SerialName("usuario_id") val usuarioId: Int? = null,
 
-    // Descripción detallada del objeto encontrado o del daño detectado
+    // Descripción del FOD
     val descripcion: String = "",
 
-    // URL de la foto del FOD almacenada en Supabase Storage (puede ser null si no hay foto)
+    // URL de la foto del FOD almacenada en Supabase Storage, si hay foto será null
     @SerialName("imagen_url") val imagenUrl: String? = null,
 
     // Estado actual de la incidencia según el ENUM definido en Supabase:
-    // "abierta" → recién registrada, pendiente de resolver
-    // "en_proceso" → se está trabajando en su resolución
-    // "cerrada" → resuelta y cerrada
+    // "abierta" si está pendiente de resolver
+    // "en_proceso" si está pendiente de resolver
+    // "cerrada"  si esta cerrada ya
     val estado: String = "abierta",
 
     // Nivel de prioridad de la incidencia (puede ser null)
     val prioridad: String? = null,
 
-    // Zona específica del avión donde se encontró el FOD (ej: tren de aterrizaje, cabina)
+    // Zona específica del avión donde se encontró el FOD
     @SerialName("zona_avion") val zonaAvion: String? = null,
 
-    // Número de empleado del operario que encontró el FOD
+    // Número de empleado que encontró el FOD
     @SerialName("numero_empleado") val numeroEmpleado: String? = null,
 
     // Fecha y hora de creación de la incidencia, generada automáticamente por Supabase
@@ -49,6 +49,6 @@ data class IncidenciaFod(
     // "restos_metalicos" → tornillos, remaches, tuercas, etc.
     // "material_consumo" → trapos, guantes, bridas, etc.
     // "personal" → bolígrafos, monedas, tarjetas, etc.
-    // "procedente_aeronave" → sellante, pintura desprendida, juntas deterioradas, etc.
+    // "procedente_aeronave" → sellante, pintura desprendida, etc.
     @SerialName("tipo_fod") val tipoFod: String? = null
 )

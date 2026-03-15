@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Declaración del documento XML con codificación UTF-8 -->
 
-<!--
-    MaterialCardView utilizada como tarjeta para mostrar
-    la información de una aeronave dentro de una lista.
--->
+<!--  MaterialCardView utilizada como tarjeta para mostrar
+    la información de una aeronave dentro de una lista.   -->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -14,20 +12,16 @@
     app:cardCornerRadius="8dp"
     app:cardElevation="4dp">
 
-    <!--
-        Contenedor interno que organiza la información
-        de la aeronave en vertical.
-    -->
+    <!-- Contenedor interno que organiza la información
+        de la aeronave en vertical. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!--
-            TextView que mostrará el modelo de la aeronave.
-            Es el dato principal por eso tiene mayor tamaño y negrita.
-        -->
+        <!-- TextView que mostrará el modelo de la aeronave.
+            Es el dato principal por eso tiene mayor tamaño y negrita.  -->
         <TextView
             android:id="@+id/tvAeronaveModelo"
             android:layout_width="wrap_content"
@@ -36,9 +30,7 @@
             android:textStyle="bold"
             android:layout_marginBottom="4dp" />
 
-        <!--
-            TextView que mostrará el número de serie de la aeronave.
-        -->
+        <!-- TextView que mostrará el número de serie de la aeronave.  -->
         <TextView
             android:id="@+id/tvAeronaveNumeroSerie"
             android:layout_width="wrap_content"
@@ -47,9 +39,7 @@
             android:textColor="@android:color/darker_gray"
             android:layout_marginBottom="4dp" />
 
-        <!--
-            TextView que indicará la ubicación actual de la aeronave.
-        -->
+        <!--  TextView que indicará la ubicación actual de la aeronave.  -->
         <TextView
             android:id="@+id/tvAeronaveUbicacion"
             android:layout_width="wrap_content"
@@ -58,10 +48,8 @@
             android:textColor="@android:color/darker_gray"
             android:layout_marginBottom="4dp" />
 
-        <!--
-            TextView que mostrará el estado de la aeronave
-            (por ejemplo: activa, mantenimiento, fuera de servicio).
-        -->
+        <!-- TextView que mostrará el estado de la aeronave
+            (por ejemplo: activa, mantenimiento, fuera de servicio).  -->
         <TextView
             android:id="@+id/tvAeronaveEstado"
             android:layout_width="wrap_content"

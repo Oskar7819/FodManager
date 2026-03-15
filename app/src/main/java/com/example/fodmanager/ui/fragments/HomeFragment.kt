@@ -32,8 +32,8 @@ data class UsuarioHome(
 
 // Fragment que muestra el Dashboard principal de la app en el tab "Inicio".
 // Muestra un resumen de la actividad del hangar adaptado al rol del usuario:
-// - rolesGenerales (administrador, head_plant, focal_point_fod) → visión global de todo el hangar
-// - Resto de roles (mando_gp4, quality, operario) → visión filtrada por su aeronave asignada
+// - rolesGenerales (administrador, head_plant, focal_point_fod) refleja  visión global de todo el hangar
+// - Resto de roles (mando_gp4, quality, operario) → visión filtrada por su aeronave
 class HomeFragment : Fragment() {
 
     private lateinit var tvBienvenida: TextView
@@ -42,10 +42,10 @@ class HomeFragment : Fragment() {
     private lateinit var tvIncidenciasEnProceso: TextView
     private lateinit var tvIncidenciasCerradas: TextView
     private lateinit var tvTotalAeronaves: TextView
-    // LinearLayout dinámico donde se añaden las últimas inspecciones programáticamente
+    // LinearLayout dinámico donde se añaden las últimas inspecciones
     private lateinit var llUltimasInspecciones: LinearLayout
 
-    // Roles que tienen visión general de todo el hangar sin filtro por aeronave
+    // Roles que tienen visión general de todas las aeronaves
     private val rolesGenerales = listOf("administrador", "head_plant", "focal_point_fod")
 
     override fun onCreateView(
@@ -80,7 +80,7 @@ class HomeFragment : Fragment() {
                     .decodeSingle<UsuarioHome>()
 
                 // Muestra el mensaje de bienvenida personalizado con el nombre del usuario
-                tvBienvenida.text = "Hola, ${usuario.nombre} 👋"
+                tvBienvenida.text = "Hola, ${usuario.nombre} "
 
                 // Determina si el usuario tiene visión general o filtrada por aeronave
                 val esGeneral = usuario.rol in rolesGenerales

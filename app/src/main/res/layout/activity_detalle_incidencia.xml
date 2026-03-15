@@ -32,7 +32,7 @@
             android:textStyle="bold"
             android:layout_marginBottom="8dp" />
 
-        <!-- Fecha y hora de registro de la incidencia en formato dd/mm/yyyy HH:mm -->
+        <!-- Fecha y hora de registro de la incidencia en formato dd/mm/yyyy HH:mm, recuerda que es automático -->
         <TextView
             android:id="@+id/tvDetalleIncidenciaFecha"
             android:layout_width="wrap_content"
