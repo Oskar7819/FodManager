@@ -1,26 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Layout de la pantalla de login (MainActivity).
-     LinearLayout vertical centrado.
-     gravity="center" centra todos los elementos tanto horizontal como verticalmente -->
+<!--
+    Pantalla de login (MainActivity).
+    LinearLayout vertical centrado que actúa como contenedor principal.
+    Fondo azul aeronáutico definido en colors.xml (@color/aeronautics_blue).
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="32dp"
+    android:padding="24dp"
     android:background="@color/aeronautics_blue">
 
-    <!-- Logo de la aplicación definido en res/drawable/img_main.png  -->
+    <!-- Logo de la aplicación centrado en la parte superior del formulario -->
     <ImageView
         android:id="@+id/imgLogo"
         android:layout_width="150dp"
         android:layout_height="150dp"
         android:src="@drawable/img_main"
-        android:layout_marginBottom="32dp"
+        android:layout_marginBottom="24dp"
         android:contentDescription="Logo" />
 
-    <!-- Nombre de la aplicación en color blanco para contrastar con el fondo azul -->
+    <!-- Nombre de la aplicación -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -28,12 +30,13 @@
         android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="@android:color/white"
-        android:layout_marginBottom="32dp" />
+        android:layout_marginBottom="24dp" />
 
-    <!-- Campo de texto para el email.
-         TextInputLayout de Material Design proporciona el borde redondeado
-         y la etiqueta flotante al escribir.
-         style OutlinedBox define el estilo con borde visible -->
+    <!--
+        Campo de email con estilo OutlinedBox de Material Design.
+        inputType="textEmailAddress" activa el teclado de email en el dispositivo.
+        hintTextColor y boxStrokeColor en negro para contraste sobre el fondo azul.
+    -->
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -44,8 +47,6 @@
         app:boxStrokeColor="@android:color/black"
         app:placeholderTextColor="@android:color/black">
 
-        <!-- Campo de texto interior donde el usuario escribe su email.
-             inputType="textEmailAddress" muestra el teclado optimizado para emails -->
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etEmail"
             android:layout_width="match_parent"
@@ -56,9 +57,10 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Campo de texto para la contraseña.
-         passwordToggleEnabled="true" añade el icono de ojo para mostrar/ocultar
-         la contraseña que el usuario está escribiendo -->
+    <!--
+        Campo de contraseña con togglede visibilidad activado (ojo).
+        inputType="textPassword" oculta los caracteres mientras se escribe.
+    -->
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -70,8 +72,6 @@
         app:placeholderTextColor="@android:color/black"
         android:layout_marginBottom="24dp">
 
-        <!-- Campo de texto interior donde el usuario escribe su contraseña.
-             inputType="textPassword" oculta los caracteres mientras se escribe -->
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etPassword"
             android:layout_width="match_parent"
@@ -82,7 +82,7 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Botón de login que dispara el proceso de autenticación contra Supabase Auth -->
+    <!-- Botón de login. Se deshabilita durante la autenticación para evitar envíos duplicados -->
     <Button
         android:id="@+id/btnLogin"
         android:layout_width="match_parent"
@@ -90,9 +90,10 @@
         android:text="Iniciar sesión"
         android:padding="12dp" />
 
-    <!-- Indicador de carga circular que se muestra mientras se procesa el login.
-         Oculto por defecto (visibility="gone"), se muestra al pulsar Iniciar sesión
-         y se oculta cuando el proceso termina (con éxito o con error) -->
+    <!--
+        Indicador de carga circular. Visible solo durante el proceso de autenticación.
+        Se muestra/oculta desde MainActivity mediante visibility = VISIBLE / GONE.
+    -->
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"

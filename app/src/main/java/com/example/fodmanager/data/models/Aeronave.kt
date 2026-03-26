@@ -3,26 +3,36 @@ package com.example.fodmanager.data.models
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-// Permitimos a Kotlin serializar/deserializar esta clase a/desde JSON
-// necesario para comunicarse con Supabase
+/**
+ * Representa una aeronave registrada en el sistema.
+ * Se mapea directamente con la tabla "aeronaves" de Supabase.
+ *
+ * Una aeronave puede tener asociados usuarios (operario, mando_gp4, quality)
+ * e inspecciones. Cuando se marca como inactiva, sus usuarios quedan desasignados.
+ */
 @Serializable
-// data class es una clase especial de Kotlin optimizada para almacenar datos
-// Se mapea directamente con la tabla "aeronaves" de Supabase
 data class Aeronave(
-    // Identificador único de la aeronave en la base de datos
+
+    /** Identificador único autogenerado por la base de datos. */
     val id: Int = 0,
 
-    // Modelo de la aeronave
+    //  Modelo comercial de la aeronave .
     val modelo: String = "",
 
-    // @SerialName mapea el nombre del campo en Kotlin con el nombre de la columna en Supabase
-    // En Kotlin usamos camelCase (numeroSerie) pero en la BD se usa snake_case (numero_serie)
+    /**
+     * Número de serie único que identifica físicamente a la aeronave.
+     * Mapeado desde la columna "numero_serie" (snake_case en BD y camelCase en Kotlin).
+     */
     @SerialName("numero_serie") val numeroSerie: String = "",
 
-    // Ubicación física de la aeronave en el hangar pero puede ser null si no esta ubicada aún
+    /**
+     * Ubicación física de la aeronave dentro del hangar.
+     * Es null si la aeronave aún no ha sido ubicada.
+     */
     val ubicacion: String? = null,
 
-    // Indica si la aeronave está en servicio  o se ha ido del hangar
-    // Cuando una aeronave se va, se marca como inactiva y sus usuarios quedan desasignados
+
+     // Indica si la aeronave está operativa en el hangar.
+
     val activa: Boolean = true
 )

@@ -1,23 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Declaración del documento XML con codificación UTF-8 -->
-
-<!--  LinearLayout principal que ocupa toda la pantalla.
-    Los elementos se organizan en orientación vertical. -->
+<!--
+    Layout de UsuariosFragment.
+    LinearLayout vertical idéntico en estructura al de inspecciones:
+    RecyclerView con peso + FAB para crear nuevos usuarios.
+    El fragment completo solo es visible para administrador, mando_gp4 y focal_point_fod;
+    HomeActivity controla la visibilidad de su pestaña en el Bottom Navigation.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <!-- RecyclerView que mostrará la lista de usuarios.
-        Este componente permite mostrar listas de manera eficiente
-        reutilizando las vistas de los elementos.   -->
+    <!--
+        Lista de tarjetas de usuarios filtrada según el rol del usuario logueado.
+        paddingBottom=88dp evita que el último item quede tapado por el FAB.
+    -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerUsuarios"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingTop="16dp"
+        android:paddingBottom="88dp" />
 
-    <!-- FloatingActionButton que permite crear un nuevo usuario.  -->
+    <!-- FAB para abrir NuevoUsuarioActivity y crear un nuevo usuario -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabNuevoUsuario"
         android:layout_width="wrap_content"

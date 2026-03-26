@@ -15,20 +15,35 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
-// Clase de datos que representa la estructura del INSERT en la tabla aeronaves de Supabase.
-// Solo contiene los campos necesarios para crear una nueva aeronave,
-// el ID y created_at los genera Supabase automáticamente.
+/**
+ * Payload para el INSERT en la tabla `aeronaves`.
+ *
+ * Solo incluye los campos que debe proporcionar el usuario; el `id` y
+ * el `created_at` los genera Supabase automáticamente en el servidor.
+ * Las nuevas aeronaves siempre se crean como activas por defecto.
+ */
 @Serializable
 data class NuevaAeronave(
     val modelo: String,
     val numero_serie: String,
     val ubicacion: String?,
-    // Las nuevas aeronaves siempre se crean como activas por defecto
     val activa: Boolean = true
 )
 
-// Activity que muestra el formulario para dar de alta una nueva aeronave en el sistema.
-// Solo accesible para los roles: administrador, mando_gp4 y focal_point_fod.
+/**
+ * Activity con el formulario para registrar una nueva aeronave en el sistema.
+ *
+ * Campos del formulario:
+ * - Modelo (obligatorio).
+ * - Número de serie (obligatorio).
+ * - Ubicación dentro del hangar (opcional; se guarda como null si se deja vacío).
+ *
+ * Acceso restringido a los roles: `administrador`, `mando_gp4` y `focal_point_fod`.
+ * El control de visibilidad del FAB que abre esta activity se gestiona en AeronaveFragment.
+ *
+ * Al guardar con éxito devuelve RESULT_OK para que AeronaveFragment
+ * recargue la lista e incluya la aeronave recién creada.
+ */
 class NuevaAeronaveActivity : AppCompatActivity() {
 
     private lateinit var etModelo: TextInputEditText
@@ -44,7 +59,6 @@ class NuevaAeronaveActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Nueva Aeronave"
 
-        // Inicialización de los elementos visuales del layout
         etModelo = findViewById(R.id.etModelo)
         etNumeroSerie = findViewById(R.id.etNumeroSerie)
         etUbicacion = findViewById(R.id.etUbicacion)
@@ -54,13 +68,22 @@ class NuevaAeronaveActivity : AppCompatActivity() {
         btnGuardar.setOnClickListener { guardarAeronave() }
     }
 
-    // Valida los campos del formulario e inserta la nueva aeronave en Supabase
+    /**
+     * Valida el formulario e inserta la nueva aeronave en Supabase.
+     *
+     * Validaciones previas al envío:
+     * - Modelo no puede estar vacío.
+     * - Número de serie no puede estar vacío.
+     *
+     * Durante el proceso de red, el botón se deshabilita y aparece el ProgressBar
+     * para evitar envíos duplicados. Si ocurre un error, ambos se restauran
+     * para que el usuario pueda intentarlo de nuevo.
+     */
     private fun guardarAeronave() {
         val modelo = etModelo.text.toString().trim()
         val numeroSerie = etNumeroSerie.text.toString().trim()
         val ubicacion = etUbicacion.text.toString().trim()
 
-        // Validaciones: modelo y número de serie son obligatorios
         if (modelo.isEmpty()) {
             etModelo.error = "El modelo es obligatorio"
             return
@@ -70,30 +93,25 @@ class NuevaAeronaveActivity : AppCompatActivity() {
             return
         }
 
-        // Deshabilita el botón y muestra el ProgressBar para evitar
-        // pulsaciones múltiples mientras se procesa la petición
         btnGuardar.isEnabled = false
         progressBar.isVisible = true
 
-        // lifecycleScope.launch ejecuta el código en una corrutina,
-        // permitiendo hacer operaciones de red sin bloquear el hilo principal de la UI
+        // lifecycleScope garantiza que la corrutina se cancela automáticamente
+        // si la activity es destruida, evitando fugas de memoria
         lifecycleScope.launch {
             try {
                 val nuevaAeronave = NuevaAeronave(
                     modelo = modelo,
                     numero_serie = numeroSerie,
-                    // Si la ubicación está vacía se guarda como null en la base de datos
+                    // Campo opcional: vacío → null en la base de datos
                     ubicacion = ubicacion.ifEmpty { null }
                 )
 
-                // Inserta la nueva aeronave en la tabla aeronaves de Supabase
                 supabase.postgrest["aeronaves"].insert(nuevaAeronave)
 
-                // runOnUiThread es necesario porque estamos en una corrutina
-                // y los cambios de UI deben hacerse en el hilo principal
+                // Los cambios de UI siempre deben ejecutarse en el hilo principal
                 runOnUiThread {
                     Toast.makeText(this@NuevaAeronaveActivity, "Aeronave guardada", Toast.LENGTH_SHORT).show()
-                    // Devuelve RESULT_OK para que AeronaveFragment recargue la lista
                     setResult(RESULT_OK)
                     finish()
                 }
@@ -101,7 +119,6 @@ class NuevaAeronaveActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 runOnUiThread {
                     Toast.makeText(this@NuevaAeronaveActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                    // Reactiva el botón para que el usuario pueda intentarlo de nuevo
                     btnGuardar.isEnabled = true
                     progressBar.isVisible = false
                 }
@@ -109,7 +126,7 @@ class NuevaAeronaveActivity : AppCompatActivity() {
         }
     }
 
-    // Gestiona el botón de atrás de la ActionBar
+    // Gestiona el botón de atrás.
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) finish()
         return super.onOptionsItemSelected(item)

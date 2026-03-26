@@ -1,19 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Declaración del documento XML con codificación UTF-8 -->
-
-<!-- ScrollView que permite desplazamiento vertical si el contenido supera la pantalla -->
+<!--
+    Layout de NuevoUsuarioActivity.
+    ScrollView con el formulario de alta de usuario. El Spinner de aeronave
+    y su etiqueta están ocultos por defecto y se muestran dinámicamente
+    cuando el rol seleccionado requiere adscripción a una aeronave.
+-->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp">
 
-    <!-- Contenedor principal que organiza todos los elementos en vertical -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingBottom="8dp">
 
-        <!-- Título de la pantalla para indicar que se está creando un nuevo usuario -->
+        <!-- Título del formulario -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -22,7 +25,7 @@
             android:textStyle="bold"
             android:layout_marginBottom="24dp" />
 
-        <!-- Campo de entrada para el nombre del usuario -->
+        <!-- Campo obligatorio: nombre de pila del nuevo usuario -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -30,7 +33,6 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_marginBottom="16dp">
 
-            <!-- EditText donde el usuario escribe su nombre -->
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etNombre"
                 android:layout_width="match_parent"
@@ -38,7 +40,7 @@
                 android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Campo de entrada para los apellidos -->
+        <!-- Campo obligatorio: apellidos del nuevo usuario -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -46,7 +48,6 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_marginBottom="16dp">
 
-            <!-- EditText donde el usuario introduce sus apellidos -->
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etApellidos"
                 android:layout_width="match_parent"
@@ -54,7 +55,7 @@
                 android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Campo de entrada para el número de empleado -->
+        <!-- Campo opcional: identificador corporativo del empleado -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -62,7 +63,6 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_marginBottom="16dp">
 
-            <!-- EditText donde se introduce el número identificador del empleado -->
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etNumeroEmpleado"
                 android:layout_width="match_parent"
@@ -70,7 +70,11 @@
                 android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Campo de entrada para el correo electrónico -->
+        <!--
+            Campo obligatorio: email del nuevo usuario.
+            inputType="textEmailAddress" activa el teclado de email.
+            Se usa como credencial en Supabase Auth.
+        -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -78,7 +82,6 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_marginBottom="16dp">
 
-            <!-- EditText que acepta formato de correo electrónico -->
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etEmail"
                 android:layout_width="match_parent"
@@ -86,7 +89,10 @@
                 android:inputType="textEmailAddress" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Campo de entrada para la contraseña del usuario -->
+        <!--
+            Campo obligatorio: contraseña inicial del nuevo usuario.
+            inputType="textPassword" oculta los caracteres.
+        -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -94,7 +100,6 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_marginBottom="16dp">
 
-            <!-- EditText con tipo de entrada contraseña -->
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etPassword"
                 android:layout_width="match_parent"
@@ -102,7 +107,7 @@
                 android:inputType="textPassword" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Texto que actúa como etiqueta para el selector de rol -->
+        <!-- Etiqueta del Spinner de rol -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -111,15 +116,22 @@
             android:textSize="14sp"
             android:layout_marginBottom="4dp" />
 
-        <!-- Spinner para seleccionar el rol del usuario -->
+        <!--
+            Spinner de rol. NuevoUsuarioActivity lo rellena con los roles
+            disponibles según la jerarquía del creador (ver cargarRolesSegunUsuario).
+            Al cambiar la selección se muestra/oculta el Spinner de aeronave.
+        -->
         <Spinner
             android:id="@+id/spinnerRol"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp" />
 
-        <!-- Etiqueta para seleccionar la aeronave asignada al usuario -->
-        <!-- Inicialmente oculta, probablemente se muestra solo para ciertos roles -->
+        <!--
+            Etiqueta del Spinner de aeronave.
+            Oculta por defecto (visibility="gone"); NuevoUsuarioActivity la muestra
+            dinámicamente cuando el rol seleccionado es operario, mando_gp4 o quality.
+        -->
         <TextView
             android:id="@+id/tvNuevoUsuarioAeronaveLabel"
             android:layout_width="wrap_content"
@@ -130,8 +142,11 @@
             android:layout_marginBottom="4dp"
             android:visibility="gone" />
 
-        <!-- Spinner para seleccionar la aeronave asignada al usuario -->
-        <!-- También está oculto por defecto -->
+        <!--
+            Spinner de aeronave. Oculto por defecto; visible cuando el rol
+            seleccionado requiere adscripción a una aeronave.
+            La primera opción es siempre "Sin aeronave asignada" (id=-1).
+        -->
         <Spinner
             android:id="@+id/spinnerNuevoUsuarioAeronave"
             android:layout_width="match_parent"
@@ -139,7 +154,7 @@
             android:layout_marginBottom="24dp"
             android:visibility="gone" />
 
-        <!-- Botón para guardar el nuevo usuario en el sistema -->
+        <!-- Botón de guardado. Se deshabilita durante el proceso de creación -->
         <Button
             android:id="@+id/btnGuardarUsuario"
             android:layout_width="match_parent"
@@ -147,8 +162,7 @@
             android:text="Guardar usuario"
             android:padding="12dp" />
 
-        <!-- Barra de progreso que se muestra mientras se procesa el guardado -->
-        <!-- Está oculta inicialmente -->
+        <!-- Indicador de carga visible durante signUpWith + INSERT + signInWith -->
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"

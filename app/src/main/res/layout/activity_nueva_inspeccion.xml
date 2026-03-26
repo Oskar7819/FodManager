@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Declaración XML con codificación UTF-8 -->
-
-<!-- ScrollView principal: permite desplazamiento vertical
- cuando el contenido no cabe en pantalla. -->
+<!--
+    Layout de NuevaInspeccionActivity.
+    ScrollView con formulario de nueva inspección. Los datos del inspector
+    y de la aeronave se muestran como campos de solo lectura cargados automáticamente.
+-->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp">
 
-    <!--Contenedor principal en vertical para organizar todos los elementos
-        del formulario uno debajo de otro. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingBottom="8dp">
 
-        <!-- Título de la pantalla -->
+        <!-- Título del formulario -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -24,31 +24,72 @@
             android:textStyle="bold"
             android:layout_marginBottom="24dp" />
 
-        <!-- Campo de texto para introducir la zona -->
-        <com.google.android.material.textfield.TextInputLayout
+        <!-- Cabecera de la sección del inspector -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Inspector"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Nombre del inspector (usuario logueado, solo lectura) -->
+        <TextView
+            android:id="@+id/tvInspectorNombre"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Zona"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_marginBottom="16dp">
+            android:text="Nombre: -"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp" />
 
-            <!-- EditText interno del campo Zona -->
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etZona"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text" />
-        </com.google.android.material.textfield.TextInputLayout>
+        <!-- Apellidos del inspector (solo lectura) -->
+        <TextView
+            android:id="@+id/tvInspectorApellidos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Apellidos: -"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp" />
 
-        <!-- Campo de texto para escribir observaciones -->
+        <!-- Número de empleado del inspector (solo lectura) -->
+        <TextView
+            android:id="@+id/tvInspectorNumeroEmpleado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nº empleado: -"
+            android:textSize="14sp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Etiqueta del Spinner de zona -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Zona"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp" />
+
+        <!--
+            Spinner con las 14 zonas obligatorias de inspección.
+            NuevaInspeccionActivity lo rellena con la lista `zonas` y comprueba
+            que la zona seleccionada no haya sido ya inspeccionada hoy antes de guardar.
+        -->
+        <Spinner
+            android:id="@+id/spinnerZona"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp" />
+
+        <!--
+            Campo de texto multilinea para observaciones del inspector.
+            Opcional: puede dejarse vacío.
+        -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Observaciones"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_marginBottom="16dp">
 
-            <!-- EditText multilínea para observaciones -->
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etObservaciones"
                 android:layout_width="match_parent"
@@ -57,39 +98,59 @@
                 android:minLines="3" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Etiqueta descriptiva para el selector de aeronave -->
+        <!-- Etiqueta de la aeronave asignada -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Aeronave"
+            android:text="Aeronave asignada"
             android:textStyle="bold"
             android:textSize="14sp"
             android:layout_marginBottom="4dp" />
 
-        <!-- Spinner para seleccionar una aeronave -->
-        <Spinner
-            android:id="@+id/spinnerAeronave"
+        <!--
+            Aeronave asignada al inspector (solo lectura, cargada automáticamente).
+            Usa @android:drawable/editbox_background para parecer un campo de texto.
+            Si el usuario no tiene aeronave asignada, NuevaInspeccionActivity muestra
+            "Sin adscripción" y deshabilita el botón Guardar.
+        -->
+        <TextView
+            android:id="@+id/tvAeronaveAsignada"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:text="Aeronave: -"
+            android:textSize="14sp"
+            android:padding="12dp"
+            android:background="@android:drawable/editbox_background"
             android:layout_marginBottom="16dp" />
 
-        <!-- Campo de texto para la ubicación de la aeronave -->
-        <com.google.android.material.textfield.TextInputLayout
+        <!-- Etiqueta de la posición de la aeronave en el hangar -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Posición de la aeronave"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp" />
+
+        <!--
+            Ubicación física de la aeronave dentro del hangar (solo lectura).
+            Se carga de la BD junto con los datos de la aeronave.
+        -->
+        <TextView
+            android:id="@+id/tvPosicionAeronave"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Ubicación de la aeronave"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_marginBottom="16dp">
+            android:text="Posición: -"
+            android:textSize="14sp"
+            android:padding="12dp"
+            android:background="@android:drawable/editbox_background"
+            android:layout_marginBottom="16dp" />
 
-            <!-- EditText interno para escribir la ubicación -->
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etUbicacionAeronave"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Casilla para indicar si se encontró FOD -->
+        <!--
+            CheckBox para indicar si se encontró FOD durante la inspección.
+            Si se marca como true, desde DetalleInspeccionActivity se podrá
+            registrar una incidencia vinculada a esta inspección.
+        -->
         <CheckBox
             android:id="@+id/cbConFod"
             android:layout_width="wrap_content"
@@ -97,7 +158,7 @@
             android:text="¿Se encontró FOD?"
             android:layout_marginBottom="24dp" />
 
-        <!-- Botón para guardar la inspección -->
+        <!-- Botón de guardado. Se deshabilita durante la petición de red -->
         <Button
             android:id="@+id/btnGuardar"
             android:layout_width="match_parent"
@@ -105,10 +166,7 @@
             android:text="Guardar inspección"
             android:padding="12dp" />
 
-        <!--
-            Barra de progreso oculta por defecto.
-            Se puede mostrar mientras se guarda la inspección.
-        -->
+        <!-- Indicador de carga visible durante el INSERT en Supabase -->
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"
@@ -118,5 +176,4 @@
             android:visibility="gone" />
 
     </LinearLayout>
-
 </ScrollView>

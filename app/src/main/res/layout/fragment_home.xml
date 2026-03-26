@@ -1,197 +1,314 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Declaración del documento XML y codificación UTF-8 -->
-
-<!-- ScrollView principal para permitir desplazamiento vertical
-    en caso de que el contenido no quepa en la pantalla.     -->
+<!--
+    Layout de HomeFragment (Dashboard principal).
+    ScrollView raíz que permite desplazarse por todo el contenido del dashboard,
+    que puede superar la altura de la pantalla especialmente con múltiples aeronaves.
+-->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:paddingBottom="24dp">
 
-    <!-- Contenedor principal que organiza todos los elementos en una columna vertical. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- TextView que mostrará el mensaje de bienvenida al usuario.
-            El texto se establece normalmente desde el código Java/Kotlin.   -->
+        <!-- Saludo personalizado con el nombre del usuario logueado -->
         <TextView
             android:id="@+id/tvBienvenida"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="20sp"
-            android:textStyle="bold"
+            android:layout_marginBottom="8dp"
+            android:text="Hola"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <!-- Texto descriptivo del panel adaptado al rol del usuario -->
+        <TextView
+            android:id="@+id/tvResumenRol"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Resumen por rol"
+            android:textSize="14sp"
             android:layout_marginBottom="16dp" />
 
-        <!-- Tarjeta inspecciones -->
-        <!--MaterialCardView que muestra información relacionada
-            con el número total de inspecciones realizadas.  -->
-        <com.google.android.material.card.MaterialCardView
-            xmlns:app="http://schemas.android.com/apk/res-auto"
+        <!-- Botón de acceso directo a ResumenInspeccionesDiariasActivity -->
+        <Button
+            android:id="@+id/btnVerResumenDiario"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="4dp">
+            android:text="Ver inspecciones por día"
+            android:layout_marginBottom="16dp" />
 
-            <!-- Contenedor interno de la tarjeta -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <!-- Título de la tarjeta -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🔍 Inspecciones"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp" />
-
-                <!-- Texto donde se mostrará el número total de inspecciones -->
-                <TextView
-                    android:id="@+id/tvTotalInspecciones"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="14sp" />
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Tarjeta incidencias -->
         <!--
-            MaterialCardView que muestra estadísticas sobre incidencias FOD
-            clasificadas por estado.
+            Primera fila de KPIs: "Inspecciones hoy" y "Abiertas".
+            Dos MaterialCardViews con layout_weight=1 que se reparten el ancho a partes iguales.
+        -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <!-- KPI: número de inspecciones realizadas el día actual -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Inspecciones hoy"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:id="@+id/tvKpiInspeccionesHoy"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- KPI: número de incidencias en estado "abierta" -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Abiertas"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:id="@+id/tvKpiAbiertas"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <!--
+            Segunda fila de KPIs: "En proceso" y "Aeronaves activas".
+            Misma estructura que la primera fila.
+        -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <!-- KPI: número de incidencias en estado "en_proceso" -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="En proceso"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:id="@+id/tvKpiEnProceso"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- KPI: número de aeronaves activas visibles para el rol del usuario -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Aeronaves activas"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:id="@+id/tvKpiAeronavesActivas"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <!--
+            Sección "Situación actual por avión".
+            llEstadoAeronaves es un LinearLayout vacío que HomeFragment rellena
+            dinámicamente con tarjetas item_estado_aeronave_dashboard por cada aeronave visible.
         -->
         <com.google.android.material.card.MaterialCardView
-            xmlns:app="http://schemas.android.com/apk/res-auto"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="8dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
             app:cardElevation="4dp">
 
-            <!-- Contenedor interno de la tarjeta -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <!-- Título de la tarjeta -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="⚠️ Incidencias FOD"
+                    android:text="✈️ Situación actual por avión"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:layout_marginBottom="8dp" />
 
-                <!-- Número de incidencias abiertas -->
-                <TextView
-                    android:id="@+id/tvIncidenciasAbiertas"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="4dp" />
-
-                <!-- Número de incidencias en proceso -->
-                <TextView
-                    android:id="@+id/tvIncidenciasEnProceso"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="4dp" />
-
-                <!-- Número de incidencias cerradas -->
-                <TextView
-                    android:id="@+id/tvIncidenciasCerradas"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="14sp" />
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Tarjeta aeronaves -->
-        <!-- MaterialCardView que muestra el número total de aeronaves activas. -->
-        <com.google.android.material.card.MaterialCardView
-            xmlns:app="http://schemas.android.com/apk/res-auto"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="4dp">
-
-            <!-- Contenedor interno de la tarjeta -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <!-- Título de la tarjeta -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="✈️ Aeronaves activas"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp" />
-
-                <!-- Texto donde se mostrará el número total de aeronaves -->
-                <TextView
-                    android:id="@+id/tvTotalAeronaves"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="14sp" />
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Últimas inspecciones -->
-        <!--  Tarjeta que mostrará dinámicamente las inspecciones
-            realizadas en los últimos 5 días.   -->
-        <com.google.android.material.card.MaterialCardView
-            xmlns:app="http://schemas.android.com/apk/res-auto"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="4dp">
-
-            <!-- Contenedor interno de la tarjeta -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <!-- Título de la tarjeta -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📋 Últimas inspecciones (5 días)"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp" />
-
-                <!-- Contenedor donde se añadirán dinámicamente las inspecciones
-                    recientes desde el código Java/Kotlin.  -->
+                <!-- Contenedor dinámico: HomeFragment.pintarEstadoAeronaves() lo rellena en tiempo de ejecución -->
                 <LinearLayout
-                    android:id="@+id/llUltimasInspecciones"
+                    android:id="@+id/llEstadoAeronaves"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical" />
-
             </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
+        <!--
+            Sección "Últimas 5 incidencias".
+            llUltimasIncidencias es un LinearLayout vacío que HomeFragment rellena
+            dinámicamente con TextViews de texto plano mediante pintarUltimasIncidencias().
+        -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⚠️ Últimas 5 incidencias"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- Contenedor dinámico rellenado por HomeFragment.pintarUltimasIncidencias() -->
+                <LinearLayout
+                    android:id="@+id/llUltimasIncidencias"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!--
+            Sección "Últimas 5 inspecciones globales".
+            Una inspección global agrupa todas las zonas inspeccionadas de una aeronave
+            en el mismo día. El subtítulo lo explica al usuario.
+            llUltimasInspeccionesGlobales se rellena con tarjetas item_inspeccion_global_dashboard.
+        -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📋 Últimas 5 inspecciones globales"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="4dp" />
+
+                <!-- Nota explicativa del criterio de "inspección global" -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Criterio usado: una inspección global = todas las zonas inspeccionadas de una aeronave en un mismo día"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- Contenedor dinámico rellenado por HomeFragment.pintarUltimasInspeccionesGlobales() -->
+                <LinearLayout
+                    android:id="@+id/llUltimasInspeccionesGlobales"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>

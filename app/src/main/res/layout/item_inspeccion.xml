@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Declaración del documento XML con codificación UTF-8 -->
-
-<!-- MaterialCardView utilizada como tarjeta para mostrar
-    la información de una inspección dentro de una lista. -->
+<!--
+    Layout de una tarjeta de inspección en el RecyclerView de InspeccionesFragment.
+    InspeccionesAdapter rellena sus TextViews en onBindViewHolder.
+    El click sobre la tarjeta completa navega a DetalleInspeccionActivity.
+-->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -12,14 +13,13 @@
     app:cardCornerRadius="8dp"
     app:cardElevation="4dp">
 
-    <!-- Contenedor interno que organiza los datos de la inspección en orientación vertical. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!--TextView que muestra la zona donde se realizó la inspección. -->
+        <!-- Zona inspeccionada como título principal de la tarjeta (ej: "ENG#1") -->
         <TextView
             android:id="@+id/tvZona"
             android:layout_width="wrap_content"
@@ -28,7 +28,7 @@
             android:textStyle="bold"
             android:layout_marginBottom="4dp" />
 
-        <!-- TextView que indica la aeronave asociada a la inspección. -->
+        <!-- Aeronave asociada a la inspección en gris secundario -->
         <TextView
             android:id="@+id/tvAeronave"
             android:layout_width="wrap_content"
@@ -37,7 +37,7 @@
             android:textColor="@android:color/darker_gray"
             android:layout_marginBottom="4dp" />
 
-        <!-- TextView que muestra la fecha en la que se realizó la inspección.  -->
+        <!-- Fecha y hora de la inspección en gris secundario (ej: "22/03/2026  10:30") -->
         <TextView
             android:id="@+id/tvFecha"
             android:layout_width="wrap_content"
@@ -46,7 +46,15 @@
             android:textColor="@android:color/darker_gray"
             android:layout_marginBottom="4dp" />
 
-        <!-- TextView que indica si durante la inspección se detectó FOD  -->
+        <!-- Línea compacta del inspector: "Nombre Apellidos · Nº empleado" -->
+        <TextView
+            android:id="@+id/tvInspectorResumen"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:layout_marginBottom="6dp" />
+
+        <!-- Resultado de la inspección en negrita: "⚠️ Con FOD" o "✅ Sin FOD" -->
         <TextView
             android:id="@+id/tvConFod"
             android:layout_width="wrap_content"

@@ -1,30 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Archivo de configuración principal de la aplicación,
-     Define permisos, componentes y configuración global -->
+
+<!--    Manifiesto principal de FOD Manager.
+    Define los permisos requeridos, lasactivities y la configuración global de la aplicación.-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permiso para acceder a Internet, necesario para conectarse a Supabase -->
+    <!-- Permiso de red. Necesario para que Supabase SDK pueda
+        realizar peticiones al backend. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Permiso para usar la cámara, necesario para poder hacer fotos -->
+    <!-- Permiso de cámara. Necesario para poder realizar fotografias.  -->
     <uses-permission android:name="android.permission.CAMERA" />
 
-    <!-- Declara que la app usa la cámara pero no la requiere obligatoriamente  -->
+    <!-- Se declara que el uso de la camara no es obligatoria (required="false"),
+    por si el dispositivo no tiene la funcionalidad de hacer fotos. -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
-    <!--
-        Bloque principal de la aplicación.
 
-        allowBackup: permite copias de seguridad de la aplicación
-        dataExtractionRules: reglas de extracción de datos.
-        fullBackupContent: reglas de copia de seguridad completa.
-        icon: icono principal de la aplicación.
-        label: nombre de la aplicación.
-        roundIcon: icono redondo para dispositivos compatibles.
-        supportsRtl: soporte para idiomas de derecha a izquierda.
-        theme: tema visual principal de la aplicación.
-    -->
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -35,8 +27,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FodManager">
 
-        <!-- Pantalla de Login. Es la Activity principal (LAUNCHER),
-             lo que se cuando se abre la aplicación -->
+        <!-- MainActivity pantalla de login. Es el punto de entrada de la aplicación (LAUNCHER).-->
         <activity
             android:name=".ui.main.MainActivity"
             android:exported="true">
@@ -46,70 +37,81 @@
             </intent-filter>
         </activity>
 
-        <!-- Pantalla principal con el menú de navegación inferior (Bottom Navigation).
-             android:exported="false" significa que solo puede abrirse desde dentro de la app -->
+        <!-- HomeActivity — Contenedor principal con el Bottom Navigation.
+            android:exported="false": solo puede ser iniciada por MainActivity. -->
         <activity
             android:name=".ui.home.HomeActivity"
             android:exported="false" />
 
-        <!-- Pantalla para crear una nueva inspección.
-             parentActivityName define a qué pantalla se vuelve al pulsar atrás -->
+        <!-- NuevaInspeccionActivity — Formulario de registro de inspección.
+            parentActivityName define la activity a la que se regresa al pulsar
+            el botón atrás.  -->
         <activity
             android:name=".ui.inspecciones.NuevaInspeccionActivity"
             android:exported="false"
             android:parentActivityName=".ui.home.HomeActivity" />
 
-        <!-- Pantalla para ver el detalle de una inspección existente
-         parentActivityName define a qué pantalla se vuelve al pulsar atrás-->
+        <!--
+            DetalleInspeccionActivity — Vista detallada de una inspección existente.
+            Desde aquí se puede navegar a NuevaIncidenciaActivity si hay Fod
+            y el rol tiene permiso.  -->
         <activity
             android:name=".ui.inspecciones.DetalleInspeccionActivity"
             android:exported="false"
             android:parentActivityName=".ui.home.HomeActivity" />
 
-        <!-- Pantalla para registrar una nueva incidencia FOD
-         parentActivityName define a qué pantalla se vuelve al pulsar atrás -->
+        <!--
+            NuevaIncidenciaActivity — Formulario de registro de incidencia FOD.
+            Solo accesible desde DetalleInspeccionActivity con una inspección
+            que tenga Fod y para roles con permiso (operario, mando_gp4, quality).  -->
         <activity
             android:name=".ui.incidencias.NuevaIncidenciaActivity"
             android:exported="false"
             android:parentActivityName=".ui.home.HomeActivity" />
 
-        <!-- Pantalla para ver el detalle de una incidencia FOD,
-             incluyendo foto, tipo, estado y opciones de cambio de estado
-               parentActivityName define a qué pantalla se vuelve al pulsar atrás -->
+        <!-- DetalleIncidenciaActivity — Vista detallada de una incidencia FOD.
+            Incluye imagen, tipo, fechas, duración y botones de cambio de estado
+            para los roles con permiso.  -->
         <activity
             android:name=".ui.incidencias.DetalleIncidenciaActivity"
             android:exported="false"
             android:parentActivityName=".ui.home.HomeActivity" />
 
-        <!-- Pantalla para dar de alta una nueva aeronave en el sistema
-         parentActivityName define a qué pantalla se vuelve al pulsar atrás -->
+        <!-- NuevaAeronaveActivity — Formulario para registrar una nueva aeronave.
+            Accesible desde el FAB de AeronaveFragment para roles con permiso
+            (administrador, mando_gp4, focal_point_fod).  -->
         <activity
             android:name=".ui.aeronaves.NuevaAeronaveActivity"
             android:exported="false"
             android:parentActivityName=".ui.home.HomeActivity" />
 
-        <!-- Pantalla para crear un nuevo usuario en el sistema
-         parentActivityName define a qué pantalla se vuelve al pulsar atrás -->
+        <!-- NuevoUsuarioActivity — Formulario de alta de usuario.
+            Accesible desde el FAB de UsuariosFragment.  -->
         <activity
             android:name=".ui.usuarios.NuevoUsuarioActivity"
             android:exported="false"
             android:parentActivityName=".ui.home.HomeActivity" />
 
-        <!-- Pantalla para editar un usuario existente,
-             permitiendo cambiar su rol y aeronave asignada
-              parentActivityName define a qué pantalla se vuelve al pulsar atrás -->
+        <!-- EditarUsuarioActivity — Permite reasignar la aeronave de un usuario existente.
+            Solo permite editar aeronave_id; el rol no es modificable desde la app. -->
         <activity
             android:name=".ui.usuarios.EditarUsuarioActivity"
             android:exported="false"
             android:parentActivityName=".ui.home.HomeActivity" />
 
-        <!-- Pantalla para ver el detalle de una aeronave,
-             incluyendo sus usuarios adscritos y opción de marcarla como inactiva
-              parentActivityName define a qué pantalla se vuelve al pulsar atrás -->
+        <!-- DetalleAeronaveActivity — Vista detallada de una aeronave.
+            Muestra los usuarios adscritos y el botón de desactivar para roles con permiso
+            (administrador, focal_point_fod). -->
         <activity
             android:name=".ui.aeronaves.DetalleAeronaveActivity"
             android:exported="false"
             android:parentActivityName=".ui.home.HomeActivity" />
+
+        <!-- ResumenInspeccionesDiariasActivity — Lista de resúmenes diarios por aeronave/día.
+            Accesible desde el botón "Ver inspecciones por día" del HomeFragment.  -->
+        <activity android:name=".ui.inspecciones.ResumenInspeccionesDiariasActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.home.HomeActivity"/>
 
     </application>
 

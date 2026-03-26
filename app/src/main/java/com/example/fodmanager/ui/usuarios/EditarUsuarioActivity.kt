@@ -14,31 +14,47 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
-// Clase de datos usada para actualizar únicamente el campo aeronave_id del usuario en Supabase.
-// El rol no se puede modificar desde la aplicación una vez creado,
-// por eso solo se actualiza la aeronave asignada.
+/**
+ * Payload mínimo para actualizar únicamente el campo `aeronave_id` de un usuario.
+ *
+ * El rol no se puede modificar desde la aplicación una vez creado el usuario,
+ * por eso este payload solo contiene la aeronave asignada.
+ * Enviar solo el campo que cambia evita sobreescribir accidentalmente otros datos.
+ */
 @Serializable
 data class ActualizarUsuario(
     val aeronave_id: Int?
 )
 
-/* Activity que permite editar la aeronave asignada a un usuario existente.
-   El rol del usuario se muestra como información pero no es editable.
-   Solo los roles que pueden estar adscritos a una aeronave ven el Spinner:
-   mando_gp4, quality y operario.
-   Los roles administrador, focal_point_fod y head_plant no se adscriben a aeronaves. */
+/**
+ * Activity que permite reasignar la aeronave de un usuario existente.
+ *
+ * El rol se muestra como campo informativo (solo lectura): no es editable
+ * desde la aplicación una vez que el usuario ha sido creado.
+ *
+ * Visibilidad del Spinner de aeronave:
+ * - [rolesConAeronave] (mando_gp4, quality, operario) → Spinner visible con aeronaves activas.
+ * - administrador, focal_point_fod, head_plant → Spinner oculto; estos roles no se adscriben
+ *   a ninguna aeronave concreta.
+ *
+ * Solo se cargan aeronaves activas, ya que asignar un usuario a una aeronave
+ * inactiva (que ya salió del hangar) no tiene sentido operativo.
+ *
+ * Al guardar devuelve RESULT_OK para que UsuariosFragment recargue la lista.
+ */
 class EditarUsuarioActivity : AppCompatActivity() {
 
     private lateinit var tvNombre: TextView
     private lateinit var tvEmail: TextView
-    // Muestra el rol actual del usuario (solo lectura, no editable)
+    /** Muestra el rol actual del usuario (solo lectura). */
     private lateinit var tvRol: TextView
     private lateinit var spinnerAeronave: Spinner
     private lateinit var btnGuardar: Button
     private lateinit var progressBar: ProgressBar
 
-    // Roles que pueden estar adscritos a una aeronave y por tanto ven el Spinner
+    /** Roles cuyo usuario puede estar adscrito a una aeronave (Spinner visible). */
     private val rolesConAeronave = listOf("mando_gp4", "quality", "operario")
+
     private val aeronaves = mutableListOf<Aeronave>()
     private var usuarioId: Int = -1
     private var rolUsuario: String = ""
@@ -50,7 +66,6 @@ class EditarUsuarioActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Editar Usuario"
 
-        // Inicialización de los elementos visuales del layout
         tvNombre = findViewById(R.id.tvEditarNombre)
         tvEmail = findViewById(R.id.tvEditarEmail)
         tvRol = findViewById(R.id.tvEditarRol)
@@ -58,26 +73,23 @@ class EditarUsuarioActivity : AppCompatActivity() {
         btnGuardar = findViewById(R.id.btnGuardarEdicion)
         progressBar = findViewById(R.id.progressBar)
 
-        // Recupera los datos del usuario enviados desde UsuariosFragment mediante el Intent
+        // Los datos del usuario llegan como extras del Intent enviado desde UsuariosFragment
         usuarioId = intent.getIntExtra("usuario_id", -1)
         val nombre = intent.getStringExtra("usuario_nombre") ?: ""
         val email = intent.getStringExtra("usuario_email") ?: ""
         rolUsuario = intent.getStringExtra("usuario_rol") ?: ""
-        // takeIf { it != -1 } convierte -1 (valor por defecto) en null
+        // takeIf { it != -1 } convierte el valor por defecto (-1) en null
         val aeronaveIdActual = intent.getIntExtra("usuario_aeronave_id", -1).takeIf { it != -1 }
 
-        // Muestra los datos del usuario en los TextViews
         tvNombre.text = nombre
         tvEmail.text = email
         tvRol.text = rolUsuario
 
-        // Muestra u oculta el Spinner de aeronave según el rol del usuario
+        // Muestra el Spinner solo para roles que pueden estar adscritos a una aeronave
         if (rolUsuario in rolesConAeronave) {
-            // Los roles que pueden estar adscritos a aeronave ven el Spinner
             spinnerAeronave.isVisible = true
             cargarAeronaves(aeronaveIdActual)
         } else {
-            // Los roles que no se adscriben a aeronave no ven el Spinner ni su etiqueta
             spinnerAeronave.isVisible = false
             findViewById<TextView>(R.id.tvEditarAeronaveLabel)?.isVisible = false
         }
@@ -85,26 +97,29 @@ class EditarUsuarioActivity : AppCompatActivity() {
         btnGuardar.setOnClickListener { guardarCambios() }
     }
 
-    // Carga las aeronaves activas desde Supabase y las muestra en el Spinner.
-    // Solo carga aeronaves activas ya que no tiene sentido asignar
-    // un usuario a una aeronave que ya se ha ido del hangar.
+    /**
+     * Carga las aeronaves activas desde Supabase y las muestra en el Spinner.
+     * Añade "Sin aeronave asignada" (id = -1) como primera opción para desasignar.
+     * Si el usuario ya tiene una aeronave asignada, la preselecciona en el Spinner.
+     *
+     * Solo se cargan aeronaves activas: no tiene sentido adscribir un usuario
+     * a una aeronave que ya ha salido del hangar.
+     *
+     * @param aeronaveIdActual ID de la aeronave actualmente asignada al usuario, o null.
+     */
     private fun cargarAeronaves(aeronaveIdActual: Int?) {
         lifecycleScope.launch {
             try {
-                // Filtra solo aeronaves activas
                 val resultado = supabase.postgrest["aeronaves"]
                     .select { filter { eq("activa", true) } }
                     .decodeList<Aeronave>()
 
                 aeronaves.clear()
-                // Añade una opción "Sin aeronave asignada" al inicio de la lista
-                // con ID -1 para identificarla fácilmente
                 aeronaves.add(Aeronave(id = -1, modelo = "Sin aeronave asignada", numeroSerie = ""))
                 aeronaves.addAll(resultado)
 
                 val opciones = aeronaves.map {
-                    if (it.id == -1) "Sin aeronave asignada"
-                    else "${it.modelo} - ${it.numeroSerie}"
+                    if (it.id == -1) "Sin aeronave asignada" else "${it.modelo} - ${it.numeroSerie}"
                 }
                 val adapterAeronave = ArrayAdapter(
                     this@EditarUsuarioActivity,
@@ -114,7 +129,7 @@ class EditarUsuarioActivity : AppCompatActivity() {
                 adapterAeronave.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                 spinnerAeronave.adapter = adapterAeronave
 
-                // Selecciona automáticamente la aeronave que ya tiene asignada el usuario
+                // Preselecciona la aeronave que ya tiene asignada el usuario (si existe)
                 val index = aeronaves.indexOfFirst { it.id == aeronaveIdActual }
                 if (index >= 0) spinnerAeronave.setSelection(index)
 
@@ -124,13 +139,19 @@ class EditarUsuarioActivity : AppCompatActivity() {
         }
     }
 
-    // Actualiza el campo aeronave_id del usuario en Supabase
+    /**
+     * Actualiza el campo `aeronave_id` del usuario en Supabase.
+     *
+     * Si el rol del usuario no está en rolesConAeronave, guarda null directamente.
+     * Si está en la lista pero se seleccionó "Sin aeronave asignada" (id = -1),
+     * también guarda null para desasignarlo.
+     *
+     * Al completarse correctamente devuelve RESULT_OK y cierra la activity.
+     */
     private fun guardarCambios() {
-        // Determina el ID de la aeronave seleccionada.
-        // Si se seleccionó "Sin aeronave asignada" (id = -1) guarda null en la base de datos
         val aeronaveId = if (rolUsuario in rolesConAeronave) {
-            val aeronaveSeleccionada = aeronaves[spinnerAeronave.selectedItemPosition]
-            if (aeronaveSeleccionada.id == -1) null else aeronaveSeleccionada.id
+            val seleccionada = aeronaves[spinnerAeronave.selectedItemPosition]
+            if (seleccionada.id == -1) null else seleccionada.id
         } else null
 
         btnGuardar.isEnabled = false
@@ -138,8 +159,6 @@ class EditarUsuarioActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                // Actualiza únicamente el campo aeronave_id del usuario en Supabase
-                // filtrando por el ID del usuario que se está editando
                 supabase.postgrest["usuarios"]
                     .update(ActualizarUsuario(aeronave_id = aeronaveId)) {
                         filter { eq("id", usuarioId) }
@@ -147,7 +166,6 @@ class EditarUsuarioActivity : AppCompatActivity() {
 
                 runOnUiThread {
                     Toast.makeText(this@EditarUsuarioActivity, "Usuario actualizado", Toast.LENGTH_SHORT).show()
-                    // Devuelve RESULT_OK para que UsuariosFragment recargue la lista
                     setResult(RESULT_OK)
                     finish()
                 }
@@ -162,7 +180,7 @@ class EditarUsuarioActivity : AppCompatActivity() {
         }
     }
 
-    // Gestiona el botón de atrás de la ActionBar
+    /** Gestiona el botón de atrás de la ActionBar. */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) finish()
         return super.onOptionsItemSelected(item)

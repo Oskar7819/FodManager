@@ -7,87 +7,162 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.fodmanager.R
 import com.example.fodmanager.data.models.IncidenciaFod
+import com.example.fodmanager.data.models.Usuario
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 
-// Adapter que conecta la lista de incidencias FOD con el RecyclerView.
-// Recibe la lista de incidencias, un mapa de aeronaves para mostrar su nombre,
-// y una función lambda que se ejecuta al pulsar una tarjeta.
+/**
+ * Adapter que conecta la lista de IncidenciaFod con el RecyclerView del fragment de incidencias.
+ *
+ * Recibe mapas auxiliares para enriquecer cada tarjeta sin realizar consultas extra:
+ * - aeronaves: aeronave_id → "Modelo - NumSerie"
+ * - usuarios:  usuario_id → Usuario completo
+ *
+ * @param incidencias   Lista mutable de incidencias a mostrar.
+ * @param aeronaves     Mapa de aeronaves para mostrar el nombre en cada tarjeta.
+ * @param usuarios      Mapa de usuarios para mostrar el declarante en cada tarjeta.
+ * @param onItemClick   Lambda invocada al pulsar una tarjeta, recibe la IncidenciaFod seleccionada.
+ */
 class IncidenciasAdapter(
     private val incidencias: MutableList<IncidenciaFod>,
-    // Mapa que relaciona el ID de la aeronave con su nombre (modelo - número de serie)
-    private val aeronavesMap: Map<Int, String>,
+    private val aeronaves: Map<Int, String>,
+    private val usuarios: Map<Int, Usuario>,
     private val onItemClick: (IncidenciaFod) -> Unit
 ) : RecyclerView.Adapter<IncidenciasAdapter.ViewHolder>() {
 
-    // ViewHolder almacena las referencias a los elementos visuales de cada tarjeta
-    // para evitar búsquedas repetidas por ID, mejorando el rendimiento
+    /**
+     * Almacena referencias a las vistas del layout `item_incidencia`
+     * para evitar llamadas repetidas a [View.findViewById] en cada reciclaje.
+     */
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val tvAeronave: TextView = view.findViewById(R.id.tvIncidenciaAeronave)
-        // tvDescripcion se reutiliza para mostrar el tipo de FOD en la tarjeta
-        val tvDescripcion: TextView = view.findViewById(R.id.tvIncidenciaDescripcion)
-        val tvZonaAvion: TextView = view.findViewById(R.id.tvIncidenciaZonaAvion)
-        val tvNumeroEmpleado: TextView = view.findViewById(R.id.tvIncidenciaNumeroEmpleado)
-        val tvFecha: TextView = view.findViewById(R.id.tvIncidenciaFecha)
-        val tvEstado: TextView = view.findViewById(R.id.tvIncidenciaEstado)
+        val tvAeronave: TextView = view.findViewById(R.id.tvAeronave)
+        val tvEstado: TextView = view.findViewById(R.id.tvEstado)
+        val tvFecha: TextView = view.findViewById(R.id.tvFecha)
+        val tvDeclaranteResumen: TextView = view.findViewById(R.id.tvDeclaranteResumen)
+        val tvTipoFod: TextView = view.findViewById(R.id.tvTipoFod)
+        val tvZona: TextView = view.findViewById(R.id.tvZona)
+        val tvDescripcion: TextView = view.findViewById(R.id.tvDescripcion)
+
+        val tvPrioridad: TextView = view.findViewById(R.id.tvPrioridad)
     }
 
-    // Se llama cuando el RecyclerView necesita crear una nueva tarjeta visual.
-    // Infla el layout XML item_incidencia y lo envuelve en un ViewHolder
+    /** Infla el layout `item_incidencia` y lo envuelve en un [ViewHolder]. */
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_incidencia, parent, false)
         return ViewHolder(view)
     }
 
-    // Se llama para rellenar cada tarjeta con los datos de la incidencia correspondiente
+    /**
+     * Rellena la tarjeta en position con los datos de la incidencia correspondiente.
+     *
+     * Para el declarante: prioriza el número de empleado guardado en la propia incidencia;
+     * si es null, usa el del perfil del usuario; si tampoco existe, muestra un placeholder.
+     *
+     * La línea de fecha combina la fecha de detección y la duración calculada
+     * para ofrecer contexto temporal de un vistazo.
+     */
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val incidencia = incidencias[position]
 
-        // Muestra el nombre de la aeronave usando el mapa de aeronaves.
-        // Si no encuentra la aeronave en el mapa muestra Aeronave desconocida
         holder.tvAeronave.text = incidencia.aeronaveId?.let {
-            aeronavesMap[it] ?: "Aeronave desconocida"
+            aeronaves[it] ?: "Aeronave desconocida"
         } ?: "Sin aeronave"
 
-        // En la tarjeta se muestra el tipo de FOD con emoji en lugar de la descripción completa.
-        // La descripción completa se puede ver en el detalle de la incidencia
-        holder.tvDescripcion.text = when (incidencia.tipoFod) {
-            "ambiental" -> "🌫️ Ambiental"
-            "herramientas" -> "🔧 Herramientas"
-            "restos_metalicos" -> "🔩 Restos metálicos"
-            "material_consumo" -> "🧤 Material de consumo"
-            "personal" -> "👤 Personal"
-            "procedente_aeronave" -> "✈️ Procedente de aeronave"
-            else -> "Sin clasificar"
-        }
-
-        holder.tvZonaAvion.text = "Zona: ${incidencia.zonaAvion ?: "No especificada"}"
-        holder.tvNumeroEmpleado.text = "Empleado: ${incidencia.numeroEmpleado ?: "No especificado"}"
-
-        // Formatea la fecha del formato ISO (2024-01-15T08:30:00) a dd/mm/yyyy HH:mm
-        val fechaFormateada = incidencia.createdAt?.let {
-            try {
-                val partes = it.split("T")
-                val fecha = partes[0]
-                val hora = partes[1].substring(0, 5)
-                val (anio, mes, dia) = fecha.split("-")
-                "$dia/$mes/$anio  $hora"
-            } catch (e: Exception) { it }
-        } ?: "Sin fecha"
-        holder.tvFecha.text = fechaFormateada
-
-        // Muestra el estado de la incidencia con emoji de color
         holder.tvEstado.text = when (incidencia.estado) {
-            "abierta" -> "🔴 Abierta"
+            "abierta"    -> "🔴 Abierta"
             "en_proceso" -> "🟡 En proceso"
-            "cerrada" -> "🟢 Cerrada"
-            else -> incidencia.estado
+            "cerrada"    -> "🟢 Cerrada"
+            else         -> incidencia.estado
         }
 
-        // Asigna el listener de click a toda la tarjeta,
-        // llamando a la función lambda con la incidencia seleccionada
+        val usuario = incidencia.usuarioId?.let { usuarios[it] }
+
+        val nombreCompleto = buildString {
+            append(usuario?.nombre ?: "Usuario")
+            append(" ")
+            append(usuario?.apellidos ?: "desconocido")
+        }
+
+        // Prioridad: número en la incidencia → número en el perfil → placeholder
+        val numeroEmpleado = incidencia.numeroEmpleado
+            ?: usuario?.numeroEmpleado
+            ?: "Sin nº empleado"
+
+        holder.tvDeclaranteResumen.text = "$nombreCompleto · $numeroEmpleado"
+
+        // Tipo FOD con emoji identificativo para facilitar el escaneo visual
+        holder.tvTipoFod.text = when (incidencia.tipoFod) {
+            "ambiental"           -> "🌫️ Ambiental"
+            "herramientas"        -> "🔧 Herramientas"
+            "restos_metalicos"    -> "🔩 Restos metálicos"
+            "material_consumo"    -> "🧤 Material de consumo"
+            "personal"            -> "👤 Personal"
+            "procedente_aeronave" -> "✈️ Procedente de aeronave"
+            else                  -> "Sin clasificar"
+        }
+
+        holder.tvPrioridad.text = when (incidencia.prioridad) {
+            "baja"    -> "🟢 Baja"
+            "alta"    -> "🔴 Alta"
+            null      -> "⚪ Sin prioridad"
+             else      -> incidencia.prioridad ?: ""
+        }
+
+        holder.tvZona.text = "Zona: ${incidencia.zonaAvion ?: "No especificada"}"
+
+        // Línea de fecha: fecha de detección + duración de la incidencia
+        holder.tvFecha.text = "Detectada: ${formatearFechaHora(incidencia.createdAt)} · ${calcularDuracion(incidencia.createdAt, incidencia.fechaCierre)}"
+
+        holder.tvDescripcion.text = incidencia.descripcion
+
         holder.itemView.setOnClickListener { onItemClick(incidencia) }
     }
 
-    // Devuelve el número total de incidencias en la lista
+    /** Devuelve el número total de incidencias de la lista. */
     override fun getItemCount() = incidencias.size
+
+    /**
+     * Parsea una fecha ISO 8601 a [LocalDateTime].
+     * Intenta primero con offset ([OffsetDateTime]) y luego sin él.
+     * Devuelve null si la cadena es nula, vacía o con formato no reconocido.
+     */
+    private fun parseFecha(fechaIso: String?): LocalDateTime? {
+        return try {
+            if (fechaIso.isNullOrBlank()) return null
+            OffsetDateTime.parse(fechaIso).toLocalDateTime()
+        } catch (e: Exception) {
+            try { LocalDateTime.parse(fechaIso) } catch (_: Exception) { null }
+        }
+    }
+
+    /**
+     * Formatea una fecha ISO 8601 al patrón "dd/MM/yyyy HH:mm".
+     * Devuelve "No disponible" si la cadena es nula o no parseable.
+     */
+    private fun formatearFechaHora(fechaIso: String?): String {
+        return try {
+            parseFecha(fechaIso)?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+                ?: "No disponible"
+        } catch (e: Exception) {
+            fechaIso ?: "No disponible"
+        }
+    }
+
+    /**
+     * Calcula cuántos días lleva o estuvo abierta la incidencia.
+     * - Si fechaCierre es null → la incidencia sigue abierta; se mide hasta ahora.
+     * - Si fechaCierre tiene valor → incidencia cerrada; se mide hasta ese instante.
+     *
+     * Devuelve un texto compacto como "abierta 3 días" para incluir en la tarjeta.
+     */
+    private fun calcularDuracion(createdAt: String?, fechaCierre: String?): String {
+        val inicio = parseFecha(createdAt) ?: return "duración no disponible"
+        val fin = parseFecha(fechaCierre) ?: OffsetDateTime.now().toLocalDateTime()
+        val dias = Duration.between(inicio, fin).toDays().coerceAtLeast(0)
+
+        return if (dias == 1L) "abierta 1 día" else "abierta $dias días"
+    }
 }

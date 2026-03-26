@@ -1,179 +1,195 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Layout para la pantalla de detalle de una incidencia FOD.
-     Usa ScrollView para permitir desplazamiento vertical cuando el contenido
-     no cabe en la pantalla (especialmente con la foto) -->
+<!--
+    Layout de DetalleIncidenciaActivity.
+    ScrollView raíz para que el contenido sea accesible en pantallas pequeñas.
+    El padding del ScrollView actúa sobre su contenido y deja espacio en los bordes.
+-->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:clipToPadding="false"
+    android:paddingStart="16dp"
+    android:paddingTop="16dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="24dp">
 
-    <!-- LinearLayout vertical que contiene todos los elementos del detalle -->
-    <LinearLayout
+    <!--
+        Tarjeta Material que agrupa toda la información de la incidencia.
+        cardCornerRadius=12dp y cardElevation=4dp dan un aspecto elevado y moderno.
+        strokeColor y strokeWidth añaden un borde gris sutil.
+    -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_marginTop="12dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="#DADADA">
 
-        <!-- Nombre de la aeronave donde se encontró el FOD (modelo - número de serie) -->
-        <TextView
-            android:id="@+id/tvDetalleIncidenciaAeronave"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp" />
-
-        <!-- Estado actual de la incidencia con emoji de color:
-             🔴 Abierta, 🟡 En proceso, 🟢 Cerrada -->
-        <TextView
-            android:id="@+id/tvDetalleIncidenciaEstado"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp" />
-
-        <!-- Fecha y hora de registro de la incidencia en formato dd/mm/yyyy HH:mm, recuerda que es automático -->
-        <TextView
-            android:id="@+id/tvDetalleIncidenciaFecha"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:textColor="@android:color/darker_gray"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Etiqueta de sección para el tipo de FOD -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Tipo de FOD"
-            android:textStyle="bold"
-            android:textSize="16sp"
-            android:layout_marginBottom="4dp" />
-
-        <!-- Clasificación del FOD según el ENUM tipo_fod con emoji descriptivo -->
-        <TextView
-            android:id="@+id/tvDetalleIncidenciaTipoFod"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Etiqueta de sección para la descripción -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Descripción"
-            android:textStyle="bold"
-            android:textSize="16sp"
-            android:layout_marginBottom="4dp" />
-
-        <!-- Descripción detallada del FOD introducida por el operario -->
-        <TextView
-            android:id="@+id/tvDetalleIncidenciaDescripcion"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Etiqueta de sección para la zona del avión -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Zona del avión"
-            android:textStyle="bold"
-            android:textSize="16sp"
-            android:layout_marginBottom="4dp" />
-
-        <!-- Zona específica del avión donde se encontró el FOD -->
-        <TextView
-            android:id="@+id/tvDetalleIncidenciaZona"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Etiqueta de sección para el número de empleado -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Número de empleado"
-            android:textStyle="bold"
-            android:textSize="16sp"
-            android:layout_marginBottom="4dp" />
-
-        <!-- Número de empleado del operario que detectó el FOD -->
-        <TextView
-            android:id="@+id/tvDetalleIncidenciaEmpleado"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Etiqueta de sección para la foto -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Foto del FOD"
-            android:textStyle="bold"
-            android:textSize="16sp"
-            android:layout_marginBottom="8dp" />
-
-        <!-- Imagen de la foto del FOD cargada desde Supabase Storage usando Glide.
-             Oculta por defecto (visibility="gone"), se muestra solo si hay imagen.
-             scaleType="centerCrop" recorta la imagen para llenar el espacio sin deformarla -->
-        <ImageView
-            android:id="@+id/imgDetalleIncidencia"
-            android:layout_width="match_parent"
-            android:layout_height="250dp"
-            android:scaleType="centerCrop"
-            android:visibility="gone"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Mensaje alternativo cuando no hay foto disponible.
-             Oculto por defecto, se muestra solo si imagenUrl es null o vacía -->
-        <TextView
-            android:id="@+id/tvSinFoto"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Sin foto disponible"
-            android:textColor="@android:color/darker_gray"
-            android:visibility="gone"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Contenedor horizontal con los botones de cambio de estado.
-             Oculto por defecto (visibility="gone"), solo visible para roles con permiso
-             (administrador, mando_gp4, quality) y cuando la incidencia no está cerrada -->
         <LinearLayout
-            android:id="@+id/llBotonesEstado"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="16dp"
-            android:visibility="gone">
+            android:orientation="vertical"
+            android:padding="16dp">
 
-            <!-- Botón para pasar el estado de "abierta" a "en_proceso".
-                 layout_weight="1" hace que ambos botones ocupen el mismo ancho.
-                 Oculto por defecto, solo visible cuando el estado es "abierta" -->
-            <Button
-                android:id="@+id/btnEnProceso"
-                android:layout_width="0dp"
+            <!-- Estado actual: emoji de color + texto (🔴 Abierta / 🟡 En proceso / 🟢 Cerrada) -->
+            <TextView
+                android:id="@+id/tvDetalleEstado"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="🟡 En proceso"
-                android:layout_marginEnd="8dp"
-                android:visibility="gone" />
+                android:text="🔴 Abierta"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="16dp" />
 
-            <!-- Botón para cerrar la incidencia (pasar a estado "cerrada").
-                 Visible cuando el estado es "abierta" o "en_proceso" -->
-            <Button
-                android:id="@+id/btnCerrar"
-                android:layout_width="0dp"
+            <!-- Aeronave a la que pertenece la incidencia -->
+            <TextView
+                android:id="@+id/tvDetalleAeronave"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="🟢 Cerrar" />
+                android:text="Aeronave: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Zona de la aeronave donde se encontró el FOD -->
+            <TextView
+                android:id="@+id/tvDetalleZona"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Zona: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Categoría del objeto FOD (traducida al español desde el ENUM interno) -->
+            <TextView
+                android:id="@+id/tvDetalleTipoFod"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Tipo FOD: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Nivel de urgencia de la incidencia con indicador emoji de color -->
+            <TextView
+                android:id="@+id/tvDetallePrioridad"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Prioridad: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Fecha y hora en que se detectó/registró la incidencia -->
+            <TextView
+                android:id="@+id/tvFechaDeteccion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Fecha de detección: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Fecha y hora de cierre; muestra "No cerrada" si aún está abierta -->
+            <TextView
+                android:id="@+id/tvFechaCierre"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Fecha de cierre: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Días que lleva o estuvo abierta la incidencia (resaltado en negrita) -->
+            <TextView
+                android:id="@+id/tvDiasAbierta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Días abierta: -"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Nombre y apellidos del usuario que registró la incidencia -->
+            <TextView
+                android:id="@+id/tvDetalleDeclarante"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Declarante: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Número de empleado del declarante -->
+            <TextView
+                android:id="@+id/tvDetalleNumeroEmpleado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Nº empleado: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Cabecera de la sección de descripción -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Descripción"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Texto libre de descripción del hallazgo FOD -->
+            <TextView
+                android:id="@+id/tvDetalleDescripcion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Sin descripción"
+                android:textSize="14sp"
+                android:layout_marginBottom="16dp" />
+
+            <!--
+                Imagen fotográfica del hallazgo FOD.
+                Oculta por defecto (visibility="gone"); DetalleIncidenciaActivity la muestra
+                si la incidencia tiene imagenUrl usando Glide.
+                scaleType="centerCrop" escala y recorta la imagen para llenar el espacio.
+            -->
+            <ImageView
+                android:id="@+id/imgDetalleIncidencia"
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                android:scaleType="centerCrop"
+                android:adjustViewBounds="true"
+                android:visibility="gone"
+                android:layout_marginBottom="16dp" />
+
+            <!--
+                Contenedor de botones de cambio de estado.
+                Oculto por defecto; visible solo para roles con permiso y si la incidencia
+                no está ya cerrada. Los botones individuales se muestran/ocultan
+                según el estado actual (ver DetalleIncidenciaActivity.configurarBotonesSegunRolYEstado).
+            -->
+            <LinearLayout
+                android:id="@+id/layoutBotonesEstado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <!-- Avanza la incidencia de "abierta" a "en_proceso". Visible en estado "abierta" -->
+                <Button
+                    android:id="@+id/btnPasarEnProceso"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Pasar a en proceso"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- Cierra definitivamente la incidencia. Visible en estados "abierta" y "en_proceso" -->
+                <Button
+                    android:id="@+id/btnCerrarIncidencia"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Cerrar incidencia" />
+            </LinearLayout>
 
         </LinearLayout>
 
-    </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
 </ScrollView>

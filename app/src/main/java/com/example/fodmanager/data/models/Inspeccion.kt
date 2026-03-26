@@ -3,33 +3,44 @@ package com.example.fodmanager.data.models
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-// Clase que representa una inspección realizada
-// Se mapea directamente con la tabla "inspecciones" de Supabase
+/**
+ * Representa una inspección FOD realizada en el hangar.
+ * Se mapea directamente con la tabla "inspecciones" de Supabase.
+ */
 @Serializable
 data class Inspeccion(
-    // Identificador único de la inspección en la base de datos
+
+    // Identificador único autogenerado por la base de datos.
     val id: Int = 0,
 
-    // ID del usuario que realizó la inspección
+    //ID del usuario que llevó a cabo la inspección.
+
     @SerialName("usuario_id") val usuarioId: Int = 0,
 
-    // Fecha y hora en que se realizó la inspección, generada automáticamente por Supabase
+    // Fecha y hora en que se realizó la inspección. Generada automáticamente por Supabase.
+
+
     val fecha: String? = null,
 
-    // Zona del hangar o aeronave donde se realizó la inspección
+    // Zona de la aeronave donde se realizó la inspección
+
     val zona: String = "",
 
-    // Observaciones adicionales del inspector sobre la inspección (puede ser null)
+    // Observaciones libres del inspector sobre el resultado de la inspección.
+
+
     val observaciones: String? = null,
 
-    // Indica si durante la inspección se encontró algún objeto FOD
-    // true → se encontró FOD, lo que permite registrar incidencias
-    // false → inspección correcta, sin FOD´s encontrados
+    // Indica si se encontró algún objeto FOD durante la inspección.
+
     @SerialName("con_fod") val conFod: Boolean = false,
 
-    // ID de la aeronave inspeccionada (puede ser null si no está asociada a una aeronave)
+    // ID de la aeronave sobre la que se realizó la inspección.
+
     @SerialName("aeronave_id") val aeronaveId: Int? = null,
 
-    // Ubicación específica de la aeronave dentro del hangar
+    // Posición de la aeronave dentro del hangar en el momento de la inspección.
+
+
     @SerialName("ubicacion_aeronave") val ubicacionAeronave: String? = null
 )

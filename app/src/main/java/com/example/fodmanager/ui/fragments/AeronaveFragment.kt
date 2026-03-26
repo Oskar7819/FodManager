@@ -25,15 +25,31 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import com.example.fodmanager.data.models.Usuario
 
-// Clase auxiliar para deserializar únicamente el rol del usuario desde Supabase
+
+/**
+ * Proyección local para deserializar únicamente el rol de un usuario.
+ * Se usa en este fragment para verificar permisos sin cargar el objeto Usuario completo.
+ * TODO: considerar reemplazar por [com.example.fodmanager.data.models.UsuarioRol]
+ *       para eliminar esta duplicidad.
+     */
+
 @Serializable
 data class UsuarioRol(val rol: String)
 
-/* Fragment que muestra la lista de aeronaves en el tab "Aeronaves" del Bottom Navigation.
-   La información mostrada y las acciones disponibles varían según el rol del usuario:
-   - rolesGenerales (administrador, head_plant, focal_point_fod)  ven todas las aeronaves
-   - mando_gp4, quality, operario  solo ven la aeronave a la que están adscritos
-   - rolesConPermiso (administrador, mando_gp4, focal_point_fod) pueden añadir aeronaves  */
+/**
+ * Fragment de Aeronaves del Bottom Navigation.
+ *
+ * Responsabilidades:
+ * - Mostrar la lista de aeronaves filtrada según el rol del usuario logueado.
+ * - Abrir DetalleAeronaveActivity al pulsar una tarjeta.
+ * - Mostrar u ocultar el FAB para añadir aeronaves según el rol.
+ * - Recargar la lista automáticamente al volver de cualquier activity hija.
+ *
+ * Lógica de visibilidad por rol:
+ * - rolesGenerales (administrador, head_plant, focal_point_fod) ven todas las aeronaves.
+ * - mando_gp4, quality, operario ven solo ven la aeronave a la que están adscritos.
+ * - rolesConPermiso (administrador, mando_gp4, focal_point_fod) pueden crear aeronaves (FAB visible).
+ */
 class AeronaveFragment : Fragment() {
 
     private lateinit var recyclerView: RecyclerView
@@ -41,13 +57,17 @@ class AeronaveFragment : Fragment() {
     private lateinit var fab: FloatingActionButton
     private val aeronaves = mutableListOf<Aeronave>()
 
-    // Roles que pueden dar de alta nuevas aeronaves
+    /** Roles que pueden dar de alta nuevas aeronaves (FAB visible). */
     private val rolesConPermiso = listOf("administrador", "mando_gp4", "focal_point_fod")
 
-    // Roles que ven todas las aeronaves del sistema (visión general)
+    /** Roles que tienen visión global de todas las aeronaves del sistema. */
     private val rolesGenerales = listOf("administrador", "head_plant", "focal_point_fod")
 
-    // Launcher para abrir NuevaAeronaveActivity y recargar la lista si se añadió una aeronave
+    /**
+     * Launcher para NuevaAeronaveActivity.
+     * Si el resultado es Activity.RESULT_OK, recarga la lista para mostrar
+     * la aeronave recién creada.
+     */
     private val nuevaAeronaveLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -65,9 +85,8 @@ class AeronaveFragment : Fragment() {
         recyclerView = view.findViewById(R.id.recyclerAeronaves)
         fab = view.findViewById(R.id.fabNuevaAeronave)
 
-        /* Configura el adapter con la lista de aeronaves.
-           Al pulsar una tarjeta abre DetalleAeronaveActivity pasando los datos
-           de la aeronave seleccionada mediante el Intent  */
+        // Al pulsar una tarjeta se abren los detalles de esa aeronave,
+        // pasando todos sus campos como extras del Intent
         adapter = AeronaveAdapter(aeronaves) { aeronave ->
             val intent = Intent(requireContext(), DetalleAeronaveActivity::class.java)
             intent.putExtra("aeronave_id", aeronave.id)
@@ -80,8 +99,8 @@ class AeronaveFragment : Fragment() {
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
 
-        // Al pulsar el FAB abre NuevaAeronaveActivity usando el launcher
-        // para detectar si se añadió una aeronave y recargar la lista
+        // El FAB usa el launcher para detectar si se añadió una aeronave
+        // y recargar la lista automáticamente al regresar
         fab.setOnClickListener {
             val intent = Intent(requireContext(), NuevaAeronaveActivity::class.java)
             nuevaAeronaveLauncher.launch(intent)
@@ -90,44 +109,40 @@ class AeronaveFragment : Fragment() {
         return view
     }
 
-    // onResume se ejecuta cada vez que el fragment vuelve a ser visible,
-    // incluyendo cuando se vuelve de DetalleAeronaveActivity.
-    // Esto garantiza que la lista se recargue y refleje los cambios
-
+    /**
+     * Se ejecuta cada vez que el fragment vuelve a ser visible (también al regresar
+     * desde DetalleAeronaveActivity), garantizando que la lista esté siempre actualizada.
+     */
     override fun onResume() {
         super.onResume()
         cargarDatos()
     }
 
-    // Carga los datos desde Supabase según el rol del usuario
+    /**
+     * Obtiene el rol y la aeronave asignada del usuario logueado, y carga
+     * la lista de aeronaves correspondiente según los permisos:
+     * - rolesGenerales, todas las aeronaves del sistema.
+     * - Resto,  solo la aeronave a la que está adscrito el usuario.
+     *
+     * Si el usuario no tiene aeronave asignada (`aeronaveId == null`), se usa -1
+     * como ID ficticio para que la consulta no devuelva resultados.
+     */
     private fun cargarDatos() {
         lifecycleScope.launch {
             try {
-                // Obtiene el email de la sesión actual de Supabase Auth
                 val email = supabase.auth.currentSessionOrNull()?.user?.email
 
-                // Consulta el usuario logueado en la tabla usuarios para obtener su rol
                 val usuarioLogueado = supabase.postgrest["usuarios"]
                     .select { filter { eq("email", email ?: "") } }
                     .decodeSingle<Usuario>()
 
-                // Muestra u oculta el FAB según si el rol tiene permiso para añadir aeronaves
-                if (usuarioLogueado.rol in rolesConPermiso) {
-                    fab.visibility = View.VISIBLE
-                } else {
-                    fab.visibility = View.GONE
-                }
+                fab.visibility = if (usuarioLogueado.rol in rolesConPermiso) View.VISIBLE else View.GONE
 
-                // Carga todas las aeronaves o solo la del usuario según su rol
                 val resultado = if (usuarioLogueado.rol in rolesGenerales) {
-                    // Roles generales ven todas las aeronaves
                     supabase.postgrest["aeronaves"]
                         .select()
                         .decodeList<Aeronave>()
                 } else {
-                    // El resto solo ve la aeronave a la que está adscrito
-                    // Si no tiene aeronave asignada (aeronaveId null) usa -1
-                    // para que la consulta no devuelva resultados
                     supabase.postgrest["aeronaves"]
                         .select { filter { eq("id", usuarioLogueado.aeronaveId ?: -1) } }
                         .decodeList<Aeronave>()
@@ -135,7 +150,6 @@ class AeronaveFragment : Fragment() {
 
                 aeronaves.clear()
                 aeronaves.addAll(resultado)
-                // Notifica al adapter que los datos han cambiado para actualizar la UI
                 adapter.notifyDataSetChanged()
 
             } catch (e: Exception) {

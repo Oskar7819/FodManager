@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Declaración del documento XML con codificación UTF-8 -->
-
-<!-- MaterialCardView utilizada como tarjeta para mostrar
-    la información de un usuario dentro de una lista. -->
+<!--
+    Layout de una tarjeta de usuario en el RecyclerView de UsuariosFragment
+    y en DetalleAeronaveActivity (lista de usuarios adscritos).
+    UsuarioAdapter rellena sus TextViews en onBindViewHolder.
+    El click sobre la tarjeta completa abre EditarUsuarioActivity.
+-->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -12,15 +14,13 @@
     app:cardCornerRadius="8dp"
     app:cardElevation="4dp">
 
-    <!-- Contenedor interno que organiza los datos
-        del usuario en orientación vertical. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!--TextView que muestra el nombre completo del usuario.  -->
+        <!-- Nombre completo del usuario como título principal: "Nombre Apellidos" -->
         <TextView
             android:id="@+id/tvUsuarioNombre"
             android:layout_width="wrap_content"
@@ -29,7 +29,7 @@
             android:textStyle="bold"
             android:layout_marginBottom="4dp" />
 
-        <!-- TextView que muestra el correo electrónico del usuario.  -->
+        <!-- Email del usuario en gris secundario; es también su credencial de login -->
         <TextView
             android:id="@+id/tvUsuarioEmail"
             android:layout_width="wrap_content"
@@ -38,7 +38,7 @@
             android:textColor="@android:color/darker_gray"
             android:layout_marginBottom="4dp" />
 
-        <!-- TextView que indica el rol del usuario -->
+        <!-- Rol del usuario precedido de la etiqueta "Rol: " (ej: "Rol: operario") -->
         <TextView
             android:id="@+id/tvUsuarioRol"
             android:layout_width="wrap_content"
@@ -46,7 +46,11 @@
             android:textSize="14sp"
             android:layout_marginBottom="4dp" />
 
-        <!-- TextView que muestra el número de empleado del usuario.  -->
+        <!--
+            Número de empleado corporativo en gris secundario.
+            Muestra "No especificado" si el campo es null.
+            Sin marginBottom para que el campo de aeronave lo siga inmediatamente.
+        -->
         <TextView
             android:id="@+id/tvUsuarioNumeroEmpleado"
             android:layout_width="wrap_content"
@@ -54,8 +58,12 @@
             android:textSize="14sp"
             android:textColor="@android:color/darker_gray" />
 
-        <!--TextView que muestra la aeronave asignada al usuario,
-            en caso de que tenga una asociada.  -->
+        <!--
+            Aeronave asignada al usuario precedida del emoji ✈️.
+            Muestra "Sin aeronave asignada" si aeronaveId es null
+            o "Aeronave desconocida" si el ID no está en el mapa.
+            Solo aplica a roles operario, mando_gp4 y quality.
+        -->
         <TextView
             android:id="@+id/tvUsuarioAeronave"
             android:layout_width="wrap_content"

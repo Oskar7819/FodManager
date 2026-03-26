@@ -21,15 +21,34 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
-// Clase de datos usada para actualizar el campo activa de la aeronave en Supabase.
-// Solo contiene el campo que queremos modificar, evitando enviar datos innecesarios.
+/**
+ * Payload mínimo para actualizar únicamente el campo activa de una aeronave.
+ * Enviar solo el campo que cambia evita sobreescribir accidentalmente otros datos
+ * con valores vacíos o por defecto.
+ */
 @Serializable
 data class ActualizarAeronave(val activa: Boolean)
 
-/* Activity que muestra el detalle de una aeronave:
-   - Información general (modelo, número de serie, ubicación, estado)
-   - Lista de usuarios adscritos a esa aeronave
- - Botón para marcar la aeronave como inactiva (solo para administrador y focal_point_fod)   */
+/**
+ * Activity que muestra el detalle completo de una aeronave.
+ *
+ * Contenido de la pantalla:
+ * - Datos identificativos: modelo, número de serie, ubicación y estado.
+ * - Lista de usuarios actualmente adscritos a esa aeronave.
+ * - Botón "Desactivar aeronave", visible solo para rolesConPermiso y únicamente
+ *   si la aeronave está activa.
+ *
+ * Flujo de navegación:
+ * Los datos llegan desde AeronaveFragment mediante extras del Intent.
+ * Al regresar (botón atrás del sistema), se devuelve RESULT_OK
+ * para que el fragment recargue la lista y refleje cualquier cambio de estado.
+ *
+ * Efecto de desactivar una aeronave:
+ * - Se marca `activa = false` en la tabla `aeronaves`.
+ * - Se pone `aeronave_id = null` a todos los usuarios adscritos.
+ * - La operación es irreversible: si la aeronave regresa al hangar, se registra
+ *   como una aeronave nueva para no mezclar datos históricos de ambos eventos.
+ */
 class DetalleAeronaveActivity : AppCompatActivity() {
 
     private lateinit var tvModelo: TextView
@@ -41,8 +60,9 @@ class DetalleAeronaveActivity : AppCompatActivity() {
     private lateinit var adapter: UsuarioAdapter
     private val usuarios = mutableListOf<Usuario>()
 
-    // Roles que pueden marcar una aeronave como inactiva
+    /** Roles que pueden marcar una aeronave como inactiva. */
     private val rolesConPermiso = listOf("administrador", "focal_point_fod")
+
     private var aeronaveId: Int = -1
     private var aeronaveActiva: Boolean = true
 
@@ -53,7 +73,7 @@ class DetalleAeronaveActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Detalle Aeronave"
 
-        // Inicialización de los elementos visuales del layout
+        // Vinculación de vistas del layout
         tvModelo = findViewById(R.id.tvDetalleAeronaveModelo)
         tvNumeroSerie = findViewById(R.id.tvDetalleAeronaveNumeroSerie)
         tvUbicacion = findViewById(R.id.tvDetalleAeronaveUbicacion)
@@ -61,30 +81,28 @@ class DetalleAeronaveActivity : AppCompatActivity() {
         btnDesactivar = findViewById(R.id.btnDesactivarAeronave)
         recyclerView = findViewById(R.id.recyclerUsuariosAeronave)
 
-        // Recupera los datos de la aeronave enviados desde AeronaveFragment
-        // mediante el Intent
+        // Recupera los datos de la aeronave enviados desde AeronaveFragment por Intent
         aeronaveId = intent.getIntExtra("aeronave_id", -1)
         val modelo = intent.getStringExtra("aeronave_modelo") ?: ""
         val numeroSerie = intent.getStringExtra("aeronave_numero_serie") ?: ""
         val ubicacion = intent.getStringExtra("aeronave_ubicacion") ?: "Sin ubicación"
         aeronaveActiva = intent.getBooleanExtra("aeronave_activa", true)
 
-        // Muestra los datos de la aeronave en los TextViews
         tvModelo.text = modelo
         tvNumeroSerie.text = "S/N: $numeroSerie"
         tvUbicacion.text = " $ubicacion"
         tvEstado.text = if (aeronaveActiva) "🟢 Activa" else "🔴 Inactiva"
 
-        // Crea el mapa de aeronaves para el adapter de usuarios
-        // asociando el ID de la aeronave con su nombre para mostrarlo en las tarjetas
+        // El adapter de usuarios necesita un mapa ID→nombre para mostrar
+        // a qué aeronave está adscrito cada usuario en su tarjeta
         val aeronaveNombre = "$modelo - $numeroSerie"
         val aeronavesMap = mapOf(aeronaveId to aeronaveNombre)
         adapter = UsuarioAdapter(usuarios, aeronavesMap) { }
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
-        // Al pulsar el botón atrás del sistema, devuelve RESULT_OK al fragment anterior
-        // para que recargue la lista de aeronaves y refleje los cambios
+        // Intercepta el gesto de "atrás" del sistema para devolver RESULT_OK,
+        // forzando al fragment anterior a recargar la lista de aeronaves
         onBackPressedDispatcher.addCallback(this) {
             setResult(RESULT_OK)
             finish()
@@ -96,8 +114,11 @@ class DetalleAeronaveActivity : AppCompatActivity() {
         btnDesactivar.setOnClickListener { desactivarAeronave() }
     }
 
-    // Verifica el rol del usuario logueado para mostrar u ocultar el botón de desactivar.
-    // Solo administrador y focal_point_fod pueden marcar una aeronave como inactiva.
+    /**
+     * Consulta el rol del usuario logueado y muestra el botón de desactivar
+     * solo si tiene permiso (rolesConPermiso) y la aeronave sigue activa.
+     * Si la consulta falla, el botón permanece oculto por seguridad.
+     */
     private fun verificarRol() {
         lifecycleScope.launch {
             try {
@@ -106,18 +127,19 @@ class DetalleAeronaveActivity : AppCompatActivity() {
                     .select { filter { eq("email", email ?: "") } }
                     .decodeSingle<UsuarioRol>()
 
-                // Muestra el botón solo si el rol tiene permiso Y la aeronave está activa
                 if (usuario.rol in rolesConPermiso && aeronaveActiva) {
                     btnDesactivar.isVisible = true
                 }
             } catch (e: Exception) {
-                // Si falla la consulta, el botón permanece oculto por seguridad
+                // Botón permanece oculto: ante cualquier error, la acción queda bloqueada
             }
         }
     }
 
-    // Carga desde Supabase los usuarios adscritos a esta aeronave
-    // filtrando por aeronave_id en la tabla usuarios
+    /**
+     * Carga desde Supabase los usuarios adscritos a esta aeronave,
+     * filtrando por aeronaveId en la tabla `usuarios`.
+     */
     private fun cargarUsuarios(aeronaveId: Int) {
         lifecycleScope.launch {
             try {
@@ -139,20 +161,24 @@ class DetalleAeronaveActivity : AppCompatActivity() {
         }
     }
 
-    // Marca la aeronave como inactiva en Supabase y desasigna a todos sus usuarios.
-    // Esto ocurre cuando la aeronave abandona el hangar.
-    // Una vez inactiva no se puede reactivar; si vuelve se registra como nueva aeronave para no mezclar datos de los dos eventos
+    /**
+     * Desactiva la aeronave y desasigna a todos sus usuarios en una secuencia de
+     * dos operaciones sobre Supabase:
+     * 1. Pone `activa = false` en la tabla `aeronaves`.
+     * 2. Pone `aeronave_id = null` a todos los usuarios adscritos.
+     *
+     * La operación es irreversible por diseño: si la aeronave vuelve al hangar
+     * se registra como una entrada nueva para no mezclar datos históricos.
+     * Tras completarse, la UI se actualiza y se notifica al fragment anterior.
+     */
     private fun desactivarAeronave() {
         lifecycleScope.launch {
             try {
-                // Actualiza el campo activa a false en la tabla aeronaves
                 supabase.postgrest["aeronaves"]
                     .update(ActualizarAeronave(activa = false)) {
                         filter { eq("id", aeronaveId) }
                     }
 
-                // Desasigna todos los usuarios adscritos a esta aeronave
-                // poniendo su aeronave_id a null en la tabla usuarios
                 supabase.postgrest["usuarios"]
                     .update(mapOf("aeronave_id" to null)) {
                         filter { eq("aeronave_id", aeronaveId) }
@@ -164,7 +190,6 @@ class DetalleAeronaveActivity : AppCompatActivity() {
                     btnDesactivar.isVisible = false
                     usuarios.clear()
                     adapter.notifyDataSetChanged()
-                    // Notifica al fragment anterior que hubo cambios para que recargue la lista
                     setResult(RESULT_OK)
                 }
 
@@ -176,8 +201,10 @@ class DetalleAeronaveActivity : AppCompatActivity() {
         }
     }
 
-    // Gestiona el botón de atrás de la ActionBar
-    // devolviendo RESULT_OK para que el fragment recargue la lista de aeronaves
+    /**
+     * Gestiona el botón de atrás.
+     * Devuelve RESULT_OK para que AeronaveFragment recargue la lista.
+     */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
             setResult(RESULT_OK)

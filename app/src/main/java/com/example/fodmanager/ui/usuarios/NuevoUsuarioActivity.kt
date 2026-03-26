@@ -19,31 +19,49 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
-// Clase de datos que representa la estructura del INSERT en la tabla usuarios de Supabase.
-// Contiene todos los campos necesarios para crear un nuevo usuario en el sistema.
+/**
+ * Payload para el INSERT en la tabla usuarios.
+ *
+ * Contiene todos los campos necesarios para crear un usuario completo.
+ * La contraseña se guarda también en la tabla como referencia interna,
+ * aunque la autenticación real la gestiona exclusivamente Supabase Auth.
+ * Los nuevos usuarios se crean siempre como activos (`activo = true`).
+ */
 @Serializable
 data class NuevoUsuario(
     val nombre: String,
     val apellidos: String,
     val numero_empleado: String?,
     val email: String,
-    // La contraseña se guarda también en la tabla usuarios como referencia,
-    // aunque la autenticación real la gestiona Supabase Auth
     val password: String,
     val rol: String,
-    // Los nuevos usuarios se crean como activos por defecto
     val activo: Boolean = true,
-    // ID de la aeronave asignada, null para roles que no se adscriben a aeronaves
+    /** Null para roles que no se adscriben a ninguna aeronave concreta. */
     val aeronave_id: Int? = null
 )
 
-// Activity que muestra el formulario para crear un nuevo usuario.
-// Los roles disponibles en el Spinner varían según el rol del usuario:
-// - administrador puede crear cualquier rol
-// - focal_point_fod puede crear mando_gp4 y quality
-// - mando_gp4 solo puede crear operarios
-// El Spinner de aeronave solo aparece para roles que se adscriben a aeronaves:
-// operario, mando_gp4 y quality
+/**
+ * Activity con el formulario para crear un nuevo usuario en el sistema.
+ *
+ * El proceso de creación tiene dos pasos:
+ * 1. Registrar el usuario en Supabase Auth (`signUpWith`) para que pueda autenticarse.
+ * 2. Insertar los datos adicionales en la tabla `usuarios`.
+ *
+ * IMPORTANTE — problema de sesión con `signUpWith`:
+ * Supabase Auth cierra automáticamente la sesión del usuario actual al registrar
+ * uno nuevo. Para evitar que el creador pierda su sesión, las credenciales se
+ * guardan en [SessionManager] al hacer login y se restauran aquí tras el `signUpWith`.
+ *
+ * Roles disponibles en el Spinner según el rol del creador:
+ * - administrador    puede crear cualquier rol.
+ * - focal_point_fod puede crear `mando_gp4` y `quality`.
+ * - mando_gp4      solo puede crear `operario`.
+ * - Otros roles       →no deberían llegar a esta pantalla (lista vacía).
+ *
+ * Spinner de aeronave:
+ * Solo aparece si el rol seleccionado pertenece a rolesConAeronave.
+ * Se oculta dinámicamente al cambiar el Spinner de rol.
+ */
 class NuevoUsuarioActivity : AppCompatActivity() {
 
     private lateinit var etNombre: TextInputEditText
@@ -57,10 +75,12 @@ class NuevoUsuarioActivity : AppCompatActivity() {
     private lateinit var btnGuardar: Button
     private lateinit var progressBar: ProgressBar
 
-    // Lista mutable de roles disponibles, se rellena según el rol del usuario
+    /** Lista de roles disponibles para el Spinner; se rellena según el rol del creador. */
     private val roles = mutableListOf<String>()
-    // Roles que pueden estar adscritos a una aeronave y por tanto ven el Spinner de aeronave
+
+    /** Roles cuyo usuario puede estar adscrito a una aeronave (Spinner de aeronave visible). */
     private val rolesConAeronave = listOf("operario", "mando_gp4", "quality")
+
     private val aeronaves = mutableListOf<Aeronave>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,7 +90,6 @@ class NuevoUsuarioActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Nuevo Usuario"
 
-        // Inicialización de los elementos visuales del layout
         etNombre = findViewById(R.id.etNombre)
         etApellidos = findViewById(R.id.etApellidos)
         etNumeroEmpleado = findViewById(R.id.etNumeroEmpleado)
@@ -82,20 +101,17 @@ class NuevoUsuarioActivity : AppCompatActivity() {
         btnGuardar = findViewById(R.id.btnGuardarUsuario)
         progressBar = findViewById(R.id.progressBar)
 
-        // Listener que detecta cambios en el Spinner de rol para mostrar u ocultar
-        // el Spinner de aeronave según si el rol seleccionado requiere aeronave asignada
+        // Al cambiar el rol seleccionado, muestra u oculta el Spinner de aeronave dinámicamente
         spinnerRol.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                // Evita ejecutarse antes de que se carguen los roles
+                // La lista de roles puede no estar cargada aún; se evita ejecutar antes de tiempo
                 if (roles.isEmpty()) return
-                val rolSeleccionado = roles[position]
-                if (rolSeleccionado in rolesConAeronave) {
-                    // Muestra el Spinner de aeronave y carga las aeronaves disponibles
+
+                if (roles[position] in rolesConAeronave) {
                     tvAeronaveLabel.isVisible = true
                     spinnerAeronave.isVisible = true
                     cargarAeronaves()
                 } else {
-                    // Oculta el Spinner de aeronave para roles que no se adscriben a aeronaves
                     tvAeronaveLabel.isVisible = false
                     spinnerAeronave.isVisible = false
                 }
@@ -103,14 +119,16 @@ class NuevoUsuarioActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
 
-        // Carga los roles disponibles según el rol del usuario
-        // antes de mostrar el formulario
         cargarRolesSegunUsuario()
 
         btnGuardar.setOnClickListener { guardarUsuario() }
     }
 
-    // Consulta el rol del usuario y determina qué roles puede crear
+    /**
+     * Consulta el rol del usuario logueado en Supabase y rellena roles con
+     * los roles que tiene permiso para crear, según la jerarquía de permisos.
+     * Una vez cargados, actualiza el adapter del Spinner de rol en el hilo principal.
+     */
     private fun cargarRolesSegunUsuario() {
         lifecycleScope.launch {
             try {
@@ -119,22 +137,16 @@ class NuevoUsuarioActivity : AppCompatActivity() {
                     .select { filter { eq("email", email ?: "") } }
                     .decodeSingle<Usuario>()
 
-                // Define los roles disponibles según la jerarquía de permisos
                 val rolesDisponibles = when (usuarioLogueado.rol) {
-                    // El administrador puede crear cualquier tipo de usuario
-                    "administrador" -> listOf("operario", "mando_gp4", "quality", "focal_point_fod", "head_plant", "administrador")
-                    // focal_point_fod gestiona mandos y quality
+                    "administrador"   -> listOf("operario", "mando_gp4", "quality", "focal_point_fod", "head_plant", "administrador")
                     "focal_point_fod" -> listOf("mando_gp4", "quality")
-                    // mando_gp4 solo puede crear operarios para su aeronave
-                    "mando_gp4" -> listOf("operario")
-                    // Cualquier otro rol no puede crear usuarios
-                    else -> emptyList()
+                    "mando_gp4"       -> listOf("operario")
+                    else              -> emptyList()
                 }
 
                 roles.clear()
                 roles.addAll(rolesDisponibles)
 
-                // Actualiza el adapter del Spinner en el hilo principal
                 runOnUiThread {
                     val adapterRol = ArrayAdapter(this@NuevoUsuarioActivity, android.R.layout.simple_spinner_item, roles)
                     adapterRol.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
@@ -147,9 +159,13 @@ class NuevoUsuarioActivity : AppCompatActivity() {
         }
     }
 
-    /* Carga las aeronaves activas desde Supabase y las muestra en el Spinner.
-       Solo carga aeronaves activas ya que no tiene sentido asignar
-       un usuario a una aeronave que ya se ha ido del hangar   */
+    /**
+     * Carga las aeronaves activas desde Supabase y las muestra en el Spinner de aeronave.
+     * Añade Sin aeronave asignada (id = -1) como primera opción para no forzar la asignación.
+     *
+     * Solo se cargan aeronaves activas: adscribir un usuario a una aeronave inactiva
+     * (que ya salió del hangar) no tiene sentido operativo.
+     */
     private fun cargarAeronaves() {
         lifecycleScope.launch {
             try {
@@ -158,13 +174,11 @@ class NuevoUsuarioActivity : AppCompatActivity() {
                     .decodeList<Aeronave>()
 
                 aeronaves.clear()
-                // Añade una opción "Sin aeronave asignada" al inicio con ID -1
                 aeronaves.add(Aeronave(id = -1, modelo = "Sin aeronave asignada", numeroSerie = ""))
                 aeronaves.addAll(resultado)
 
                 val opciones = aeronaves.map {
-                    if (it.id == -1) "Sin aeronave asignada"
-                    else "${it.modelo} - ${it.numeroSerie}"
+                    if (it.id == -1) "Sin aeronave asignada" else "${it.modelo} - ${it.numeroSerie}"
                 }
                 val adapterAeronave = ArrayAdapter(
                     this@NuevoUsuarioActivity,
@@ -180,7 +194,19 @@ class NuevoUsuarioActivity : AppCompatActivity() {
         }
     }
 
-    // Valida los campos, crea el usuario en Supabase Auth e inserta sus datos en la tabla usuarios
+    /**
+     * Valida el formulario y crea el nuevo usuario en dos pasos:
+     * 1. signUpWith(Email) →registra las credenciales en Supabase Auth.
+     * 2. INSERT en usuarios  guarda el perfil completo del usuario.
+     * 3. signInWith(Email) restaura la sesión del creador usando SessionManager.
+     *
+     * Validaciones previas al envío:
+     * - Nombre, apellidos, email y contraseña son obligatorios.
+     * - Número de empleado es opcional; si se deja vacío se guarda como null.
+     *
+     * Si la aeronave seleccionada es Sin aeronave asignada (id = -1),
+     * se guarda null en aeronave_id.
+     */
     private fun guardarUsuario() {
         val nombre = etNombre.text.toString().trim()
         val apellidos = etApellidos.text.toString().trim()
@@ -189,47 +215,42 @@ class NuevoUsuarioActivity : AppCompatActivity() {
         val password = etPassword.text.toString().trim()
         val rol = roles[spinnerRol.selectedItemPosition]
 
-        // Obtiene el ID de la aeronave seleccionada.
-        // Si se seleccionó "Sin aeronave asignada" (id = -1) guarda null
         val aeronaveId = if (rol in rolesConAeronave && aeronaves.isNotEmpty()) {
             val seleccionada = aeronaves[spinnerAeronave.selectedItemPosition]
             if (seleccionada.id == -1) null else seleccionada.id
         } else null
 
-        // Validaciones de campos obligatorios
-        if (nombre.isEmpty()) { etNombre.error = "El nombre es obligatorio"; return }
+        if (nombre.isEmpty())    { etNombre.error = "El nombre es obligatorio"; return }
         if (apellidos.isEmpty()) { etApellidos.error = "Los apellidos son obligatorios"; return }
-        if (email.isEmpty()) { etEmail.error = "El email es obligatorio"; return }
-        if (password.isEmpty()) { etPassword.error = "La contraseña es obligatoria"; return }
+        if (email.isEmpty())     { etEmail.error = "El email es obligatorio"; return }
+        if (password.isEmpty())  { etPassword.error = "La contraseña es obligatoria"; return }
 
         btnGuardar.isEnabled = false
         progressBar.isVisible = true
 
         lifecycleScope.launch {
             try {
-                // Crea el usuario en Supabase Auth para que pueda iniciar sesión en la app.
-                // IMPORTANTE: signUpWith cierra automáticamente la sesión actual
-                // e inicia sesión con el nuevo usuario
+                // Paso 1: registrar en Supabase Auth.
+                // ADVERTENCIA: esto cierra la sesión actual automáticamente.
                 supabase.auth.signUpWith(Email) {
                     this.email = email
                     this.password = password
                 }
 
-                // Inserta los datos adicionales del usuario en la tabla "usuarios"
-                val nuevoUsuario = NuevoUsuario(
-                    nombre = nombre,
-                    apellidos = apellidos,
-                    numero_empleado = numeroEmpleado.ifEmpty { null },
-                    email = email,
-                    password = password,
-                    rol = rol,
-                    aeronave_id = aeronaveId
+                // Paso 2: insertar el perfil completo en la tabla usuarios
+                supabase.postgrest["usuarios"].insert(
+                    NuevoUsuario(
+                        nombre = nombre,
+                        apellidos = apellidos,
+                        numero_empleado = numeroEmpleado.ifEmpty { null },
+                        email = email,
+                        password = password,
+                        rol = rol,
+                        aeronave_id = aeronaveId
+                    )
                 )
-                supabase.postgrest["usuarios"].insert(nuevoUsuario)
 
-                // Restaura la sesión del usuario original usando las credenciales
-                // guardadas en SessionManager al hacer login.
-                // Necesario porque signUpWith cerró la sesión anterior automáticamente
+                // Paso 3: restaurar la sesión del creador (cerrada por signUpWith en el paso 1)
                 supabase.auth.signInWith(Email) {
                     this.email = SessionManager.emailActual
                     this.password = SessionManager.passwordActual
@@ -237,7 +258,6 @@ class NuevoUsuarioActivity : AppCompatActivity() {
 
                 runOnUiThread {
                     Toast.makeText(this@NuevoUsuarioActivity, "Usuario creado correctamente", Toast.LENGTH_SHORT).show()
-                    // Devuelve RESULT_OK para que UsuariosFragment recargue la lista
                     setResult(RESULT_OK)
                     finish()
                 }
@@ -252,7 +272,7 @@ class NuevoUsuarioActivity : AppCompatActivity() {
         }
     }
 
-    // Gestiona el botón de atrás de la ActionBar
+    /** Gestiona el botón de atrás de la ActionBar. */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) finish()
         return super.onOptionsItemSelected(item)

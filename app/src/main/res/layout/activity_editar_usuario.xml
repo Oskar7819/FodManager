@@ -1,20 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Layout para la pantalla de edición de un usuario existente.
-     Permite cambiar la aeronave asignada al usuario.
-     El rol se muestra como información pero NO es editable,
-     ya que no se pueden modificar -->
+<!--
+    Layout de EditarUsuarioActivity.
+    ScrollView para que el formulario sea accesible con el teclado virtual desplegado.
+    Solo permite editar la aeronave asignada; el rol es solo lectura.
+-->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:paddingBottom="24dp">
 
-    <!-- LinearLayout vertical que contiene todos los elementos del formulario -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingBottom="8dp">
 
-        <!-- Título de la pantalla -->
+        <!-- Título del formulario -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -23,7 +25,7 @@
             android:textStyle="bold"
             android:layout_marginBottom="24dp" />
 
-        <!-- Nombre completo del usuario, no editable -->
+        <!-- Nombre completo del usuario (solo lectura, no editable) -->
         <TextView
             android:id="@+id/tvEditarNombre"
             android:layout_width="wrap_content"
@@ -32,7 +34,7 @@
             android:textStyle="bold"
             android:layout_marginBottom="4dp" />
 
-        <!-- Email del usuario, no editable-->
+        <!-- Email del usuario en gris secundario (solo lectura) -->
         <TextView
             android:id="@+id/tvEditarEmail"
             android:layout_width="wrap_content"
@@ -41,7 +43,7 @@
             android:textColor="@android:color/darker_gray"
             android:layout_marginBottom="24dp" />
 
-        <!-- Etiqueta del campo Rol -->
+        <!-- Etiqueta del campo rol -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -50,9 +52,7 @@
             android:textSize="14sp"
             android:layout_marginBottom="4dp" />
 
-        <!-- Rol actual del usuario, no editable.
-             Se muestra como TextView en lugar de Spinner para dejar claro
-             que el rol no se puede modificar una vez asignado -->
+        <!-- Rol actual del usuario (solo lectura; no se puede cambiar desde la app) -->
         <TextView
             android:id="@+id/tvEditarRol"
             android:layout_width="wrap_content"
@@ -60,8 +60,11 @@
             android:textSize="14sp"
             android:layout_marginBottom="16dp" />
 
-        <!-- Etiqueta del Spinner de aeronave. Se oculta para roles que no se adscriben a aeronaves
-             (administrador, focal_point_fod, head_plant) -->
+        <!--
+            Etiqueta del Spinner de aeronave.
+            EditarUsuarioActivity la oculta (isVisible = false) para roles que
+            no se adscriben a aeronaves (administrador, focal_point_fod, head_plant).
+        -->
         <TextView
             android:id="@+id/tvEditarAeronaveLabel"
             android:layout_width="wrap_content"
@@ -71,16 +74,18 @@
             android:textSize="14sp"
             android:layout_marginBottom="4dp" />
 
-        <!-- Spinner para seleccionar la aeronave asignada al usuario.
-             Solo visible para roles que se adscriben a aeronaves: operario, mando_gp4, quality.
-             Se oculta para administrador, focal_point_fod y head_plant -->
+        <!--
+            Spinner con las aeronaves activas disponibles para asignar al usuario.
+            La primera opción es siempre "Sin aeronave asignada" (id=-1).
+            Se oculta para roles que no se adscriben a aeronaves.
+        -->
         <Spinner
             android:id="@+id/spinnerEditarAeronave"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp" />
 
-        <!-- Botón para guardar los cambios en Supabase -->
+        <!-- Botón de guardado. Se deshabilita durante la petición de red -->
         <Button
             android:id="@+id/btnGuardarEdicion"
             android:layout_width="match_parent"
@@ -88,8 +93,7 @@
             android:text="Guardar cambios"
             android:padding="12dp" />
 
-        <!-- Indicador de carga que se muestra mientras se procesa la petición a Supabase.
-             Oculto por defecto (visibility="gone"), se muestra al pulsar Guardar cambios -->
+        <!-- Indicador de carga visible solo durante el UPDATE en Supabase -->
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"

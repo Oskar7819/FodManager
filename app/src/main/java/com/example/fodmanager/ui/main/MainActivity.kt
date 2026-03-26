@@ -17,10 +17,17 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import kotlinx.coroutines.launch
 
-/*  Activity de login, es la primera pantalla que  se ve al abrir la aplicación
-    Gestiona la autenticación contra Supabase Auth usando email y contraseña.
-    Una vez autenticado navega a HomeActivity y se destruye a sí misma con finish()
-    para que el usuario no pueda volver a la pantalla de login pulsando atrás. */
+/**
+ * Pantalla de login: es la primera activity que ve el usuario al abrir la aplicación.
+ *
+ * Responsabilidades:
+ * - Recoger las credenciales (email y contraseña) del usuario.
+ * - Autenticarlas contra Supabase Auth.
+ * - Guardar las credenciales en SessionManager para restaurar la sesión
+ *   en caso de que el usuario logueado cree un nuevo usuario (ver SessionManager).
+ * - Navegar a[HomeActivity tras un login exitoso y destruirse con finish
+ *   para que el usuario no pueda volver a esta pantalla con el botón atrás.
+ */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var etEmail: TextInputEditText
@@ -32,13 +39,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Inicialización de los elementos visuales del layout
         etEmail = findViewById(R.id.etEmail)
         etPassword = findViewById(R.id.etPassword)
         btnLogin = findViewById(R.id.btnLogin)
         progressBar = findViewById(R.id.progressBar)
 
-        // Listener del botón de login que valida los campos antes de intentar autenticar
         btnLogin.setOnClickListener {
             val email = etEmail.text.toString().trim()
             val password = etPassword.text.toString().trim()
@@ -53,45 +58,45 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Realiza el proceso de autenticación contra Supabase Auth
+    /**
+     * Autentica al usuario contra Supabase Auth usando el proveedor Email.
+     *
+     * Durante el proceso el botón queda deshabilitado y el ProgressBar visible
+     * para evitar envíos duplicados. El bloque `finally` restaura ambos elementos
+     * independientemente del resultado.
+     *
+     * Si las credenciales son correctas:
+     * 1. Se guardan en SessionManager para posibles restauraciones de sesión.
+     * 2. Se navega a HomeActivity y se destruye esta activity.
+     *
+     * Si las credenciales son incorrectas o hay un error de red, se muestra
+     * el mensaje de error al usuario y se reactiva el formulario.
+     */
     private fun login(email: String, password: String) {
-        // Muestra el ProgressBar y deshabilita el botón para evitar
-        // pulsaciones múltiples mientras se procesa la autenticación
         progressBar.visibility = View.VISIBLE
         btnLogin.isEnabled = false
 
-        // lifecycleScope.launch ejecuta el código en una corrutina
-        // para no bloquear el hilo principal de la UI durante la petición de red
         lifecycleScope.launch {
             try {
-                // Autentica al usuario en Supabase Auth usando el proveedor de Email
-                // Si las credenciales son incorrectas lanza una excepción
                 supabase.auth.signInWith(Email) {
                     this.email = email
                     this.password = password
                 }
 
-                // Guarda las credenciales en SessionManager para poder restaurar
-                // la sesión del usuario actual si crea un nuevo usuario desde la app,
-                // ya que signUpWith cierra la sesión actual automáticamente
+                // Las credenciales se guardan por si se necesita restaurar la sesión
+                // tras crear un nuevo usuario (signUpWith cierra la sesión actual)
                 SessionManager.emailActual = email
                 SessionManager.passwordActual = password
 
                 Toast.makeText(this@MainActivity, "Login correcto", Toast.LENGTH_SHORT).show()
 
-                // Navega a HomeActivity y llama a finish() para destruir MainActivity,
-                // impidiendo que el usuario vuelva al login pulsando el botón atrás
-                val intent = Intent(this@MainActivity, HomeActivity::class.java)
-                startActivity(intent)
+                startActivity(Intent(this@MainActivity, HomeActivity::class.java))
                 finish()
 
             } catch (e: Exception) {
-                // Si las credenciales son incorrectas o hay un error de red
-                // muestra el mensaje de error al usuario
                 Toast.makeText(this@MainActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
             } finally {
-                // finally se ejecuta siempre, tanto si hay éxito como si hay error.
-                // Oculta el ProgressBar y reactiva el botón en cualquier caso
+                // Se ejecuta siempre: restaura el estado de la UI
                 progressBar.visibility = View.GONE
                 btnLogin.isEnabled = true
             }

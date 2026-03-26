@@ -2,55 +2,100 @@ package com.example.fodmanager.ui.incidencias
 
 import android.os.Bundle
 import android.view.MenuItem
+import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.example.fodmanager.R
 import com.example.fodmanager.data.models.Aeronave
 import com.example.fodmanager.data.models.IncidenciaFod
+import com.example.fodmanager.data.models.Usuario
+import com.example.fodmanager.data.remote.supabase
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import com.example.fodmanager.data.models.UsuarioRol
-import com.example.fodmanager.data.remote.supabase
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 
-// Clase de datos usada para actualizar únicamente el campo estado de la incidencia en Supabase.
-// Solo contiene el campo que queremos modificar, evitando enviar datos innecesarios.
+/**
+ * Payload mínimo para actualizar el estado de una incidencia FOD en Supabase.
+ * Se incluye fechaCierre para registrarla automáticamente al cerrar la incidencia.
+ */
 @Serializable
-data class ActualizarEstado(val estado: String)
+data class UpdateEstadoIncidenciaPayload(
+    val estado: String,
+    @SerialName("fecha_cierre") val fechaCierre: String? = null
+)
 
-// Activity que muestra el detalle completo de una incidencia FOD:
-// - Aeronave, estado, fecha, tipo de FOD, descripción, zona, empleado y foto
-// - Botones para cambiar el estado (solo para administrador, mando_gp4 y quality)
-// El flujo de estados es: abierta - en_proceso - cerrada (o abierta - cerrada directamente)
+/**
+ * Proyección del usuario logueado con los campos necesarios para esta pantalla:
+ * verificar permisos (rol) e identificar al declarante.
+ */
+@Serializable
+data class UsuarioDetalleIncidencia(
+    val id: Int,
+    val nombre: String,
+    val apellidos: String,
+    val rol: String,
+    @SerialName("numero_empleado") val numeroEmpleado: String? = null
+)
+
+/**
+ * Activity que muestra el detalle completo de una incidencia FOD.
+ *
+ * Información mostrada:
+ * - Estado actual con indicador de color.
+ * - Aeronave, zona y tipo de FOD.
+ * - Fechas de detección y cierre, y duración total.
+ * - Nombre, apellidos y número de empleado del declarante.
+ * - Descripción e imagen (si existe, cargada con Glide desde Supabase Storage).
+ *
+ * Gestión del estado:
+ * Los botones "Pasar a en proceso" y "Cerrar incidencia" solo son visibles para
+ * rolesConPermiso y cuando la incidencia no está ya cerrada.
+ * Al cerrar se registra automáticamente la fechaCierre con el instante actual.
+ * Tras cada cambio de estado se recarga el detalle para reflejar el nuevo estado.
+ *
+ * Flujo de navegación:
+ * El ID de la incidencia llega como extra del Intent enviado desde IncidenciasFragment
+ * o DetalleInspeccionActivity.
+ */
 class DetalleIncidenciaActivity : AppCompatActivity() {
 
-    private lateinit var tvAeronave: TextView
-    private lateinit var tvEstado: TextView
-    private lateinit var tvFecha: TextView
-    private lateinit var tvTipoFod: TextView
-    private lateinit var tvDescripcion: TextView
-    private lateinit var tvZona: TextView
-    private lateinit var tvEmpleado: TextView
-    private lateinit var imgFoto: ImageView
-    private lateinit var tvSinFoto: TextView
-    // LinearLayout que contiene los botones de cambio de estado,
-    // oculto por defecto y visible solo para roles con permiso
-    private lateinit var llBotonesEstado: LinearLayout
-    private lateinit var btnEnProceso: Button
-    private lateinit var btnCerrar: Button
+    private lateinit var tvDetalleEstado: TextView
+    private lateinit var tvDetalleAeronave: TextView
+    private lateinit var tvDetalleZona: TextView
+    private lateinit var tvDetalleTipoFod: TextView
 
-    // Roles que pueden cambiar el estado de una incidencia
-    private val rolesConPermiso = listOf("administrador", "mando_gp4", "quality")
+    private lateinit var tvFechaDeteccion: TextView
+    private lateinit var tvFechaCierre: TextView
+    private lateinit var tvDiasAbierta: TextView
+
+    private lateinit var tvDetalleDeclarante: TextView
+    private lateinit var tvDetalleNumeroEmpleado: TextView
+    private lateinit var tvDetalleDescripcion: TextView
+
+    private lateinit var imgDetalleIncidencia: ImageView
+
+    private lateinit var layoutBotonesEstado: LinearLayout
+    private lateinit var btnPasarEnProceso: Button
+    private lateinit var btnCerrarIncidencia: Button
+
+    private lateinit var tvDetallePrioridad: TextView
+
     private var incidenciaId: Int = -1
-    private var estadoActual: String = "abierta"
+
+    /** Roles que pueden cambiar el estado de una incidencia. */
+    private val rolesConPermiso = listOf("administrador", "mando_gp4", "quality")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,159 +104,276 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Detalle Incidencia FOD"
 
-        // Inicialización de los elementos visuales del layout
-        tvAeronave = findViewById(R.id.tvDetalleIncidenciaAeronave)
-        tvEstado = findViewById(R.id.tvDetalleIncidenciaEstado)
-        tvFecha = findViewById(R.id.tvDetalleIncidenciaFecha)
-        tvTipoFod = findViewById(R.id.tvDetalleIncidenciaTipoFod)
-        tvDescripcion = findViewById(R.id.tvDetalleIncidenciaDescripcion)
-        tvZona = findViewById(R.id.tvDetalleIncidenciaZona)
-        tvEmpleado = findViewById(R.id.tvDetalleIncidenciaEmpleado)
-        imgFoto = findViewById(R.id.imgDetalleIncidencia)
-        tvSinFoto = findViewById(R.id.tvSinFoto)
-        llBotonesEstado = findViewById(R.id.llBotonesEstado)
-        btnEnProceso = findViewById(R.id.btnEnProceso)
-        btnCerrar = findViewById(R.id.btnCerrar)
+        tvDetalleEstado = findViewById(R.id.tvDetalleEstado)
+        tvDetalleAeronave = findViewById(R.id.tvDetalleAeronave)
+        tvDetalleZona = findViewById(R.id.tvDetalleZona)
+        tvDetalleTipoFod = findViewById(R.id.tvDetalleTipoFod)
+        tvFechaDeteccion = findViewById(R.id.tvFechaDeteccion)
+        tvFechaCierre = findViewById(R.id.tvFechaCierre)
+        tvDiasAbierta = findViewById(R.id.tvDiasAbierta)
+        tvDetalleDeclarante = findViewById(R.id.tvDetalleDeclarante)
+        tvDetalleNumeroEmpleado = findViewById(R.id.tvDetalleNumeroEmpleado)
+        tvDetalleDescripcion = findViewById(R.id.tvDetalleDescripcion)
+        imgDetalleIncidencia = findViewById(R.id.imgDetalleIncidencia)
+        layoutBotonesEstado = findViewById(R.id.layoutBotonesEstado)
+        btnPasarEnProceso = findViewById(R.id.btnPasarEnProceso)
+        btnCerrarIncidencia = findViewById(R.id.btnCerrarIncidencia)
+        tvDetallePrioridad = findViewById(R.id.tvDetallePrioridad)
 
-        // Recupera el ID de la incidencia enviado desde IncidenciasFragment mediante el Intent
         incidenciaId = intent.getIntExtra("incidencia_id", -1)
+
         if (incidenciaId == -1) {
-            Toast.makeText(this, "Error al cargar incidencia", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Incidencia no válida", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
 
-        // Asigna los listeners a los botones de cambio de estado
-        btnEnProceso.setOnClickListener { cambiarEstado("en_proceso") }
-        btnCerrar.setOnClickListener { cambiarEstado("cerrada") }
+        btnPasarEnProceso.setOnClickListener { actualizarEstado("en_proceso") }
+        btnCerrarIncidencia.setOnClickListener { actualizarEstado("cerrada") }
 
-        cargarDetalle(incidenciaId)
+        cargarDetalle()
     }
 
-    // Carga desde Supabase todos los datos de la incidencia y los muestra en pantalla
-    private fun cargarDetalle(id: Int) {
+    /**
+     * Carga desde Supabase todos los datos necesarios para mostrar el detalle:
+     * la incidencia, el usuario logueado (para permisos), el declarante y la aeronave.
+     * Si la incidencia no existe, cierra la activity.
+     */
+    private fun cargarDetalle() {
         lifecycleScope.launch {
             try {
-                // Obtiene la incidencia completa filtrando por su ID
                 val incidencia = supabase.postgrest["incidencias_fod"]
-                    .select { filter { eq("id", id) } }
-                    .decodeSingle<IncidenciaFod>()
+                    .select { filter { eq("id", incidenciaId) } }
+                    .decodeList<IncidenciaFod>()
+                    .firstOrNull()
 
-                estadoActual = incidencia.estado
-
-                // Obtiene el nombre de la aeronave haciendo una consulta adicional
-                // si la incidencia tiene aeronave asignada
-                val aeronaveTexto = incidencia.aeronaveId?.let {
-                    val aeronave = supabase.postgrest["aeronaves"]
-                        .select { filter { eq("id", it) } }
-                        .decodeSingle<Aeronave>()
-                    "${aeronave.modelo} - ${aeronave.numeroSerie}"
-                } ?: "Sin aeronave"
-
-                tvAeronave.text = aeronaveTexto
-
-                // Muestra el estado con emoji de color según su valor, en proceso deberia ser amarillo
-                tvEstado.text = when (incidencia.estado) {
-                    "abierta" -> "🔴 Abierta"
-                    "en_proceso" -> "🟡 En proceso"
-                    "cerrada" -> "🟢 Cerrada"
-                    else -> incidencia.estado
+                if (incidencia == null) {
+                    Toast.makeText(this@DetalleIncidenciaActivity, "No se encontró la incidencia", Toast.LENGTH_LONG).show()
+                    finish()
+                    return@launch
                 }
 
-                // Formatea la fecha del formato ISO (2024-01-15T08:30:00) a dd/mm/yyyy HH:mm
-                val fechaFormateada = incidencia.createdAt?.let {
-                    try {
-                        val partes = it.split("T")
-                        val fecha = partes[0]
-                        val hora = partes[1].substring(0, 5)
-                        val (anio, mes, dia) = fecha.split("-")
-                        "$dia/$mes/$anio  $hora"
-                    } catch (e: Exception) { it }
-                } ?: "Sin fecha"
-                tvFecha.text = "Fecha: $fechaFormateada"
+                val email = supabase.auth.currentSessionOrNull()?.user?.email.orEmpty()
 
-                // Muestra el tipo de FOD con descripción completa y emoji representativo
-                tvTipoFod.text = when (incidencia.tipoFod) {
-                    "ambiental" -> "🌫️ Ambiental (suciedad y polvo)"
-                    "herramientas" -> "🔧 Herramientas (llaves, destornilladores...)"
-                    "restos_metalicos" -> "🔩 Restos metálicos (tornillos, remaches...)"
-                    "material_consumo" -> "🧤 Material de consumo (trapos, guantes...)"
-                    "personal" -> "👤 Personal (bolígrafos, monedas...)"
-                    "procedente_aeronave" -> "✈️ Procedente de aeronave (sellante, pintura...)"
-                    else -> "Sin clasificar"
+                // Usuario logueado: necesario para verificar el rol y mostrar/ocultar botones
+                val usuarioActual = if (email.isNotBlank()) {
+                    supabase.postgrest["usuarios"]
+                        .select { filter { eq("email", email) } }
+                        .decodeList<UsuarioDetalleIncidencia>()
+                        .firstOrNull()
+                } else null
+
+                // Declarante: quien registró la incidencia (puede ser distinto del usuario logueado)
+                val declarante = incidencia.usuarioId?.let { userId ->
+                    supabase.postgrest["usuarios"]
+                        .select { filter { eq("id", userId) } }
+                        .decodeList<Usuario>()
+                        .firstOrNull()
                 }
 
-                tvDescripcion.text = incidencia.descripcion
-                tvZona.text = incidencia.zonaAvion ?: "No especificada"
-                tvEmpleado.text = incidencia.numeroEmpleado ?: "No especificado"
-
-                // Carga la foto usando Glide (librería de carga de imágenes)
-                // Si no hay foto muestra el texto "Sin foto disponible"
-                if (!incidencia.imagenUrl.isNullOrEmpty()) {
-                    imgFoto.isVisible = true
-                    Glide.with(this@DetalleIncidenciaActivity)
-                        .load(incidencia.imagenUrl)
-                        .into(imgFoto)
-                } else {
-                    tvSinFoto.isVisible = true
+                val aeronave = incidencia.aeronaveId?.let { aeronaveId ->
+                    supabase.postgrest["aeronaves"]
+                        .select { filter { eq("id", aeronaveId) } }
+                        .decodeList<Aeronave>()
+                        .firstOrNull()
                 }
 
-                // Verifica el rol del usuario logueado para mostrar u ocultar los botones de estado
-                val email = supabase.auth.currentSessionOrNull()?.user?.email
-                val usuarioJson = supabase.postgrest["usuarios"]
-                    .select { filter { eq("email", email ?: "") } }
-                    .decodeSingle<UsuarioRol>()
-
-                // Muestra los botones solo si el rol tiene permiso Y la incidencia no está cerrada
-                if (usuarioJson.rol in rolesConPermiso && incidencia.estado != "cerrada") {
-                    llBotonesEstado.isVisible = true
-                    when (incidencia.estado) {
-                        // Si está abierta muestra ambos botones: pasar a en_proceso o cerrar
-                        "abierta" -> {
-                            btnEnProceso.isVisible = true
-                            btnCerrar.isVisible = true
-                        }
-                        // Si está en proceso solo muestra el botón de cerrar
-                        "en_proceso" -> {
-                            btnEnProceso.isVisible = false
-                            btnCerrar.isVisible = true
-                        }
-                    }
-                }
+                pintarIncidencia(incidencia, declarante, aeronave)
+                configurarBotonesSegunRolYEstado(
+                    rol = usuarioActual?.rol.orEmpty(),
+                    estado = incidencia.estado.orEmpty()
+                )
 
             } catch (e: Exception) {
-                Toast.makeText(this@DetalleIncidenciaActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@DetalleIncidenciaActivity, "Error cargando incidencia: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
 
-    // Actualiza el estado de la incidencia en Supabase y recarga el detalle
-    // para reflejar el cambio en la UI inmediatamente
-    private fun cambiarEstado(nuevoEstado: String) {
+    /**
+     * Rellena todas las vistas del layout con los datos de incidencia.
+     * Si incidencia tiene URL de imagen, la carga con Glide; si no, oculta el ImageView.
+     */
+    private fun pintarIncidencia(
+        incidencia: IncidenciaFod,
+        declarante: Usuario?,
+        aeronave: Aeronave?
+    ) {
+        val estado = incidencia.estado ?: ""
+
+        tvDetalleEstado.text = when (estado) {
+            "abierta"    -> "🔴 Abierta"
+            "en_proceso" -> "🟡 En proceso"
+            "cerrada"    -> "🟢 Cerrada"
+            else         -> if (estado.isBlank()) "Estado no disponible" else estado
+        }
+
+        tvDetalleAeronave.text =
+            "Aeronave: ${aeronave?.modelo ?: "Sin modelo"} - ${aeronave?.numeroSerie ?: "Sin serie"}"
+
+        tvDetalleZona.text = "Zona: ${incidencia.zonaAvion ?: "No especificada"}"
+        tvDetalleTipoFod.text = "Tipo FOD: ${traducirTipoFod(incidencia.tipoFod)}"
+        tvDetallePrioridad.text = "Prioridad: ${traducirPrioridad(incidencia.prioridad)}"
+        tvFechaDeteccion.text = "Fecha de detección: ${formatearFechaHora(incidencia.createdAt)}"
+        tvFechaCierre.text = "Fecha de cierre: ${incidencia.fechaCierre?.let { formatearFechaHora(it) } ?: "No cerrada"}"
+        tvDiasAbierta.text = calcularTextoDuracion(incidencia.createdAt, incidencia.fechaCierre)
+
+        // Construye el nombre del declarante ignorando partes vacías
+        val nombreDeclarante = listOfNotNull(
+            declarante?.nombre?.takeIf { it.isNotBlank() },
+            declarante?.apellidos?.takeIf { it.isNotBlank() }
+        ).joinToString(" ")
+
+        tvDetalleDeclarante.text =
+            "Declarante: ${if (nombreDeclarante.isNotBlank()) nombreDeclarante else "Usuario desconocido"}"
+        tvDetalleNumeroEmpleado.text =
+            "Nº empleado: ${declarante?.numeroEmpleado ?: "No especificado"}"
+        tvDetalleDescripcion.text = incidencia.descripcion ?: "Sin descripción"
+
+        if (!incidencia.imagenUrl.isNullOrBlank()) {
+            imgDetalleIncidencia.visibility = View.VISIBLE
+            Glide.with(this).load(incidencia.imagenUrl).centerCrop().into(imgDetalleIncidencia)
+        } else {
+            imgDetalleIncidencia.visibility = View.GONE
+        }
+    }
+
+    /**
+     * Muestra u oculta los botones de cambio de estado según el rol del usuario
+     * y el estado actual de la incidencia.
+     *
+     * Reglas:
+     * - Si el rol no tiene permiso o la incidencia está cerrada → ocultar ambos botones.
+     * - Estado "abierta" → mostrar ambos botones.
+     * - Estado "en_proceso" → mostrar solo "Cerrar incidencia".
+     * - Cualquier otro estado → ocultar el contenedor.
+     */
+    private fun configurarBotonesSegunRolYEstado(rol: String, estado: String) {
+        if (rol !in rolesConPermiso || estado == "cerrada") {
+            layoutBotonesEstado.visibility = View.GONE
+            return
+        }
+
+        layoutBotonesEstado.visibility = View.VISIBLE
+
+        when (estado) {
+            "abierta" -> {
+                btnPasarEnProceso.visibility = View.VISIBLE
+                btnCerrarIncidencia.visibility = View.VISIBLE
+            }
+            "en_proceso" -> {
+                btnPasarEnProceso.visibility = View.GONE
+                btnCerrarIncidencia.visibility = View.VISIBLE
+            }
+            else -> layoutBotonesEstado.visibility = View.GONE
+        }
+    }
+
+    /**
+     * Actualiza el estado de la incidencia en Supabase y recarga el detalle.
+     * Si nuevoEstado es "cerrada", se registra la fechaCierre con el instante actual.
+     */
+    private fun actualizarEstado(nuevoEstado: String) {
         lifecycleScope.launch {
             try {
+                val fechaCierre = if (nuevoEstado == "cerrada") OffsetDateTime.now().toString() else null
+
                 supabase.postgrest["incidencias_fod"]
-                    .update(ActualizarEstado(estado = nuevoEstado)) {
+                    .update(UpdateEstadoIncidenciaPayload(estado = nuevoEstado, fechaCierre = fechaCierre)) {
                         filter { eq("id", incidenciaId) }
                     }
 
-                runOnUiThread {
-                    Toast.makeText(this@DetalleIncidenciaActivity, "Estado actualizado", Toast.LENGTH_SHORT).show()
-                    // Recarga el detalle para actualizar el estado y los botones visibles
-                    cargarDetalle(incidenciaId)
-                }
+                Toast.makeText(this@DetalleIncidenciaActivity, "Estado actualizado", Toast.LENGTH_SHORT).show()
+
+                // Recarga el detalle para que la UI refleje el nuevo estado y los botones correctos
+                cargarDetalle()
 
             } catch (e: Exception) {
-                runOnUiThread {
-                    Toast.makeText(this@DetalleIncidenciaActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                }
+                Toast.makeText(this@DetalleIncidenciaActivity, "Error actualizando estado: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
 
-    // Gestiona el botón de atrás de la ActionBar
+    /**
+     * Calcula y formatea la duración de la incidencia como texto.
+     * - Si sigue abierta (sin [fechaCierre]): "Días abierta: N días".
+     * - Si está cerrada: "Tiempo abierta: N días".
+     */
+    private fun calcularTextoDuracion(createdAt: String?, fechaCierre: String?): String {
+        val inicio = parseFecha(createdAt) ?: return "Días abierta: no disponible"
+        val fin = parseFecha(fechaCierre) ?: OffsetDateTime.now().toLocalDateTime()
+        val dias = Duration.between(inicio, fin).toDays().coerceAtLeast(0)
+
+        return if (fechaCierre.isNullOrBlank()) {
+            if (dias == 1L) "Días abierta: 1 día" else "Días abierta: $dias días"
+        } else {
+            if (dias == 1L) "Tiempo abierta: 1 día" else "Tiempo abierta: $dias días"
+        }
+    }
+
+    /**
+     * Parsea una fecha ISO 8601 a LocalDateTime.
+     * Intenta primero con offset (OffsetDateTime) y luego sin él.
+     * Devuelve null si la cadena es nula, vacía o no parseable.
+     */
+    private fun parseFecha(fechaIso: String?): LocalDateTime? {
+        return try {
+            if (fechaIso.isNullOrBlank()) return null
+            OffsetDateTime.parse(fechaIso).toLocalDateTime()
+        } catch (e: Exception) {
+            try { LocalDateTime.parse(fechaIso) } catch (_: Exception) { null }
+        }
+    }
+
+    /**
+     * Formatea una fecha ISO 8601 al patrón "dd/MM/yyyy HH:mm".
+     * Devuelve "No disponible" si la cadena es nula o no parseable.
+     */
+    private fun formatearFechaHora(fechaIso: String?): String {
+        return try {
+            parseFecha(fechaIso)?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+                ?: "No disponible"
+        } catch (e: Exception) {
+            fechaIso ?: "No disponible"
+        }
+    }
+
+    /**
+     * Traduce el código interno del tipo de FOD a texto legible en español.
+     * Devuelve el propio código si no coincide con ninguno conocido.
+     */
+    private fun traducirTipoFod(tipo: String?): String {
+        return when (tipo) {
+            "ambiental"           -> "Ambiental"
+            "herramientas"        -> "Herramientas"
+            "restos_metalicos"    -> "Restos metálicos"
+            "material_consumo"    -> "Material de consumo"
+            "personal"            -> "Personal"
+            "procedente_aeronave" -> "Procedente de aeronave"
+            null                  -> "No especificado"
+            else                  -> tipo
+        }
+    }
+
+    /**
+     * Traduce el código interno de prioridad a texto legible con indicador visual.
+     * Devuelve "No especificada" si el campo es null.
+     */
+    private fun traducirPrioridad(prioridad: String?): String {
+        return when (prioridad) {
+            "baja"    -> "🟢 Baja"
+            "alta"    -> "🔴 Alta"
+            null      -> "No especificada"
+            else   -> prioridad ?: ""
+        }
+    }
+
+    /** Gestiona el botón de atrás de la ActionBar. */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == android.R.id.home) finish()
+        if (item.itemId == android.R.id.home) {
+            finish()
+            return true
+        }
         return super.onOptionsItemSelected(item)
     }
 }

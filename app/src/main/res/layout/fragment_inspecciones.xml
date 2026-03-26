@@ -1,23 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Declaración del documento XML y codificación UTF-8 -->
-
-<!-- LinearLayout principal que ocupa toda la pantalla.
-    Organiza los elementos en orientación vertical.   -->
+<!--
+    Layout de InspeccionesFragment.
+    LinearLayout vertical con RecyclerView y FAB para crear nuevas inspecciones.
+    El paddingBottom del RecyclerView evita que el último item quede oculto bajo el FAB.
+    A diferencia del FAB de aeronaves, este siempre es visible (sin visibility="gone")
+    porque cualquier usuario con aeronave asignada puede crear inspecciones.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="8dp">
+    android:orientation="vertical">
 
-    <!-- RecyclerView que mostrará la lista de inspecciones.
-        Se utiliza para mostrar listas dinámicas de forma eficiente.  -->
+    <!--
+        Lista de tarjetas de inspecciones ordenadas de más reciente a más antigua.
+        paddingBottom=88dp deja espacio para que el FAB no tape el último item.
+    -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerInspecciones"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingTop="16dp"
+        android:paddingBottom="88dp" />
 
-    <!--  FloatingActionButton que permite crear una nueva inspección  -->
+    <!-- FAB siempre visible para crear una nueva inspección -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabNuevaInspeccion"
         android:layout_width="wrap_content"

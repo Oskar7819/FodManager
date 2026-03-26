@@ -1,21 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Declaración del documento XML con codificación UTF-8 -->
-
-<!--  LinearLayout principal que ocupa toda la pantalla.
-    Los elementos se organizan en orientación vertical.  -->
+<!--
+    Layout de AeronaveFragment.
+    LinearLayout vertical con RecyclerView y FAB flotante sobre él.
+    El FAB está posicionado con layout_gravity="end" pero, al estar en un LinearLayout,
+    aparece debajo del RecyclerView; el paddingBottom del RecyclerView evita que
+    el último item quede tapado por el FAB.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <!--  RecyclerView que mostrará la lista de aeronaves -->
+    <!--
+        Lista de tarjetas de aeronaves.
+        height=0dp + layout_weight=1 ocupa todo el espacio disponible.
+        paddingBottom=88dp da espacio para que el último item no quede oculto bajo el FAB.
+    -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerAeronaves"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingTop="16dp"
+        android:paddingBottom="88dp" />
 
-    <!-- FloatingActionButton para añadir una nueva aeronave  -->
+    <!--
+        FAB para crear una nueva aeronave.
+        Oculto por defecto (visibility="gone"); AeronaveFragment lo muestra
+        solo para los roles con permiso de creación (administrador, mando_gp4, focal_point_fod).
+    -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabNuevaAeronave"
         android:layout_width="wrap_content"

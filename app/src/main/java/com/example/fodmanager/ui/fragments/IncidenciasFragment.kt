@@ -10,98 +10,179 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.fodmanager.ui.incidencias.DetalleIncidenciaActivity
-import com.example.fodmanager.ui.incidencias.IncidenciasAdapter
 import com.example.fodmanager.R
 import com.example.fodmanager.data.models.Aeronave
 import com.example.fodmanager.data.models.IncidenciaFod
 import com.example.fodmanager.data.models.Usuario
 import com.example.fodmanager.data.remote.supabase
+import com.example.fodmanager.ui.incidencias.DetalleIncidenciaActivity
+import com.example.fodmanager.ui.incidencias.IncidenciasAdapter
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
 
-// Fragment que muestra la lista de incidencias FOD en el tab "FOD" del Bottom Navigation.
-// Las incidencias mostradas se filtran según el rol del usuario:
-// - rolesGenerales (administrador, head_plant, focal_point_fod)  ven todas las incidencias
-// - Resto de roles (mando_gp4, quality, operario) solo ven las de su aeronave asignada
+/*
+    Fragment que muestra la lista de incidencias FOD.
+
+    REGLA IMPORTANTE:
+    - Solo tienen visión global:
+        administrador
+        head_plant
+        focal_point_fod
+
+    - quality NO tiene visión global.
+      Si tiene aeronave asignada, solo ve incidencias FOD de su avión.
+
+    - Las incidencias deben mostrarse de más nueva a más antigua.
+*/
 class IncidenciasFragment : Fragment() {
 
+    // RecyclerView principal
     private lateinit var recyclerView: RecyclerView
+
+    // Adapter de la lista
     private lateinit var adapter: IncidenciasAdapter
+
+    // Lista principal que alimenta el adapter
     private val incidencias = mutableListOf<IncidenciaFod>()
 
-    // Mapa que relaciona el ID de cada aeronave con su nombre (modelo - número de serie)
-    // Se usa para mostrar el nombre de la aeronave en cada tarjeta de incidencia
+    // Mapas auxiliares para mostrar textos legibles
     private val aeronavesMap = mutableMapOf<Int, String>()
+    private val usuariosMap = mutableMapOf<Int, Usuario>()
 
-    // Roles que tienen visión general de todas las incidencias sin filtro por aeronave
-    private val rolesGenerales = listOf("administrador", "head_plant", "focal_point_fod")
+    /*
+        Roles con visión global de todas las incidencias.
+        OJO: quality no está aquí, porque solo debe ver su avión.
+    */
+    private val rolesGenerales = listOf(
+        "administrador",
+        "head_plant",
+        "focal_point_fod"
+    )
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val view = inflater.inflate(R.layout.fragment_incidencias, container, false)
 
+        // Enlazamos el RecyclerView del XML
         recyclerView = view.findViewById(R.id.recyclerIncidencias)
 
-        // Configura el adapter con la lista de incidencias y el mapa de aeronaves.
-        // Al pulsar una tarjeta abre DetalleIncidenciaActivity pasando el ID de la incidencia
-        adapter = IncidenciasAdapter(incidencias, aeronavesMap) { incidencia ->
+        /*
+            Creamos el adapter y le pasamos:
+            - lista de incidencias
+            - mapa de aeronaves para mostrar "modelo - serie"
+            - mapa de usuarios para mostrar quién declaró la incidencia
+        */
+        adapter = IncidenciasAdapter(
+            incidencias,
+            aeronavesMap,
+            usuariosMap
+        ) { incidencia ->
+            /*
+                Al pulsar una incidencia, abrimos su detalle.
+            */
             val intent = Intent(requireContext(), DetalleIncidenciaActivity::class.java)
             intent.putExtra("incidencia_id", incidencia.id)
             startActivity(intent)
         }
+
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
 
         cargarDatos()
+
         return view
     }
 
-    // Carga las incidencias y aeronaves desde Supabase según el rol del usuario logueado
+    /*
+        Carga:
+        1. usuario logueado
+        2. aeronaves
+        3. usuarios
+        4. incidencias visibles según rol
+
+        REGLAS:
+        - quality solo ve incidencias de su aeronave asignada
+        - las incidencias se ordenan de más nueva a más antigua
+    */
     private fun cargarDatos() {
         lifecycleScope.launch {
             try {
-                // Obtiene el email de la sesión actual de Supabase Auth
-                val email = supabase.auth.currentSessionOrNull()?.user?.email
+                // Email del usuario autenticado actualmente
+                val email = supabase.auth.currentSessionOrNull()?.user?.email.orEmpty()
 
-                // Consulta el usuario logueado para obtener su rol y aeronave asignada
-                val usuarioLogueado = supabase.postgrest["usuarios"]
-                    .select { filter { eq("email", email ?: "") } }
+                // Usuario logueado completo
+                val usuarioActual = supabase.postgrest["usuarios"]
+                    .select {
+                        filter { eq("email", email) }
+                    }
                     .decodeSingle<Usuario>()
 
-                // Carga todas las aeronaves para construir el mapa ID → nombre
-                // necesario para mostrar el nombre de la aeronave en cada tarjeta
+                /*
+                    Cargamos aeronaves para poder mostrar un texto visible
+                    en las tarjetas del RecyclerView.
+                */
                 val aeronaves = supabase.postgrest["aeronaves"]
                     .select()
                     .decodeList<Aeronave>()
 
                 aeronavesMap.clear()
-                aeronaves.forEach { aeronavesMap[it.id] = "${it.modelo} - ${it.numeroSerie}" }
+                aeronaves.forEach { aeronave ->
+                    aeronavesMap[aeronave.id] = "${aeronave.modelo} - ${aeronave.numeroSerie}"
+                }
 
-                // Carga todas las incidencias o solo las de la aeronave del usuario según su rol
-                val resultado = if (usuarioLogueado.rol in rolesGenerales) {
-                    // Roles generales ven todas las incidencias del sistema
+                /*
+                    Cargamos usuarios para poder mostrar el nombre
+                    del declarante en cada incidencia.
+                */
+                val usuarios = supabase.postgrest["usuarios"]
+                    .select()
+                    .decodeList<Usuario>()
+
+                usuariosMap.clear()
+                usuarios.forEach { usuario ->
+                    usuariosMap[usuario.id] = usuario
+                }
+
+                /*
+                    Si el rol es global, ve todas las incidencias.
+                    Si no, solo ve las incidencias de su aeronave asignada.
+                */
+                val resultado = if (usuarioActual.rol in rolesGenerales) {
                     supabase.postgrest["incidencias_fod"]
                         .select()
                         .decodeList<IncidenciaFod>()
                 } else {
-                    // El resto solo ve las incidencias de su aeronave asignada
-                    // Si aeronaveId es null usa -1 para que no devuelva resultados
                     supabase.postgrest["incidencias_fod"]
-                        .select { filter { eq("aeronave_id", usuarioLogueado.aeronaveId ?: -1) } }
+                        .select {
+                            filter { eq("aeronave_id", usuarioActual.aeronaveId ?: -1) }
+                        }
                         .decodeList<IncidenciaFod>()
                 }
 
+                /*
+                    ORDEN IMPORTANTE:
+                    Queremos mostrar primero la incidencia más nueva.
+
+                    Usamos createdAt en orden descendente.
+                    Si alguna incidencia no tiene fecha, la dejamos al final.
+                */
+                val resultadoOrdenado = resultado.sortedByDescending { it.createdAt ?: "" }
+
+                // Refrescamos la lista visual
                 incidencias.clear()
-                incidencias.addAll(resultado)
-                // Notifica al adapter que los datos han cambiado para actualizar la UI
+                incidencias.addAll(resultadoOrdenado)
                 adapter.notifyDataSetChanged()
 
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Error: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
     }

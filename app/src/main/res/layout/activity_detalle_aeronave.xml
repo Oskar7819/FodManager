@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Layout para la pantalla de detalle de una aeronave.
-     Muestra la información de la aeronave, sus usuarios adscritos
-     y el botón para marcarla como inactiva (solo para roles con permiso) -->
+<!--
+    Layout de DetalleAeronaveActivity.
+    LinearLayout vertical con scroll implícito gracias al RecyclerView con weight.
+    Muestra los datos identificativos de la aeronave, el botón de desactivar
+    y la lista de usuarios adscritos.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:paddingBottom="16dp">
 
-    <!-- Modelo de la aeronave  -->
+    <!-- Modelo de la aeronave como título principal -->
     <TextView
         android:id="@+id/tvDetalleAeronaveModelo"
         android:layout_width="wrap_content"
@@ -17,7 +21,7 @@
         android:textStyle="bold"
         android:layout_marginBottom="4dp" />
 
-    <!-- Número de serie de la aeronave  -->
+    <!-- Número de serie en gris secundario -->
     <TextView
         android:id="@+id/tvDetalleAeronaveNumeroSerie"
         android:layout_width="wrap_content"
@@ -26,7 +30,7 @@
         android:textColor="@android:color/darker_gray"
         android:layout_marginBottom="4dp" />
 
-    <!-- Ubicación de la aeronave dentro del hangar -->
+    <!-- Ubicación física en el hangar, en gris secundario -->
     <TextView
         android:id="@+id/tvDetalleAeronaveUbicacion"
         android:layout_width="wrap_content"
@@ -35,16 +39,16 @@
         android:textColor="@android:color/darker_gray"
         android:layout_marginBottom="4dp" />
 
-    <!-- Estado de la aeronave: 🟢 Activa o 🔴 Inactiva -->
+    <!-- Estado activa/inactiva con indicador emoji de color -->
     <TextView
         android:id="@+id/tvDetalleAeronaveEstado"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="14sp"
         android:textStyle="bold"
-        android:layout_marginBottom="24dp" />
+        android:layout_marginBottom="16dp" />
 
-    <!-- Título de la sección de usuarios adscritos -->
+    <!-- Cabecera de la sección de usuarios adscritos -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -53,10 +57,11 @@
         android:textStyle="bold"
         android:layout_marginBottom="8dp" />
 
-    <!-- Botón para marcar la aeronave como inactiva cuando se va del hangar.
-         Oculto por defecto (visibility="gone"), solo se muestra para los roles
-         administrador y focal_point_fod si la aeronave está activa.
-         Una vez inactiva no se puede reactivar, se registra como nueva aeronave si vuelve -->
+    <!--
+        Botón para marcar la aeronave como inactiva.
+        Oculto por defecto (visibility="gone"); DetalleAeronaveActivity lo muestra
+        solo si el rol tiene permiso (administrador o focal_point_fod) y la aeronave está activa.
+    -->
     <Button
         android:id="@+id/btnDesactivarAeronave"
         android:layout_width="match_parent"
@@ -65,13 +70,19 @@
         android:layout_marginBottom="16dp"
         android:visibility="gone" />
 
-    <!-- Lista de usuarios adscritos a esta aeronave.
-         layout_weight="1" hace que ocupe todo el espacio vertical disponible.
-         layout_height="0dp" es necesario para que layout_weight funcione correctamente -->
+    <!--
+        Lista de usuarios adscritos a esta aeronave.
+        height=0dp + layout_weight=1 permite que el RecyclerView ocupe
+        el espacio restante de la pantalla sin desbordar el layout.
+        clipToPadding=false + paddingBottom evita que el último item quede
+        tapado por el borde inferior.
+    -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerUsuariosAeronave"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="8dp" />
 
 </LinearLayout>

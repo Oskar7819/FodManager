@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Tarjeta de resumen diario de inspecciones por aeronave.
+    Se infla en ResumenInspeccionesDiariasAdapter.onCreateViewHolder() para cada
+    elemento de la lista de ResumenInspeccionesDiariasActivity.
+
+    Usa CardView clásico (androidx.cardview) en lugar de MaterialCardView porque
+    ResumenInspeccionesDiariasAdapter necesita cambiar el color de fondo directamente
+    con setCardBackgroundColor(), que en CardView es más directo.
+
+    El color de fondo se establece desde código según el estado semafórico:
+    - Rojo suave  (#FFEBEE) → se detectó FOD.
+    - Naranja suave (#FFF3E0) → inspección incompleta (sin FOD).
+    - Verde suave  (#E8F5E9) → inspección completa y sin FOD.
+
+    android:foreground="?attr/selectableItemBackground" añade el efecto ripple
+    al pulsar la tarjeta, aunque en esta pantalla no hay listener de click definido.
+-->
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/cardRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="6dp"
+    android:layout_marginBottom="6dp"
+    android:layout_marginStart="2dp"
+    android:layout_marginEnd="2dp"
+    android:foreground="?attr/selectableItemBackground"
+    android:padding="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Fecha del día en formato "dd/MM/yyyy" en gris secundario -->
+        <TextView
+            android:id="@+id/tvFechaResumen"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Fecha: 19/03/2026"
+            android:textSize="13sp"
+            android:textColor="@android:color/darker_gray"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Nombre de la aeronave como título principal de la tarjeta: "Modelo - NumSerie" -->
+        <TextView
+            android:id="@+id/tvAeronaveResumen"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="A400M - MSN001"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <!--
+            Estado de completitud de la inspección diaria.
+            Muestra cuántas de las 14 zonas obligatorias fueron inspeccionadas.
+            Ejemplos: "✅ Inspección diaria completa (14/14 zonas)"
+                      "⚠️ Inspección diaria incompleta (9/14 zonas)"
+        -->
+        <TextView
+            android:id="@+id/tvEstadoResumen"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="✅ Inspección diaria completa"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp" />
+
+        <!--
+            Indicador FOD del día.
+            Ejemplos: "🟢 Sin FOD en esta inspección diaria"
+                      "🚨 Se detectó FOD en N zona(s)"
+        -->
+        <TextView
+            android:id="@+id/tvFodResumen"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🟢 Sin FOD en esta inspección diaria"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Cabecera de la sección de zonas inspeccionadas (siempre visible) -->
+        <TextView
+            android:id="@+id/tvTituloInspeccionadas"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Zonas inspeccionadas:"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:layout_marginBottom="4dp" />
+
+        <!--
+            Contenedor dinámico de las zonas que sí fueron inspeccionadas (☑ zona).
+            ResumenInspeccionesDiariasAdapter.onBindViewHolder() lo rellena
+            llamando a crearLinea() por cada zona con color negro.
+            Siempre visible porque toda tarjeta tiene al menos una zona inspeccionada.
+        -->
+        <LinearLayout
+            android:id="@+id/llInspeccionadas"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="8dp" />
+
+        <!--
+            Cabecera de zonas pendientes. Oculta por defecto (visibility="gone");
+            el adapter la muestra solo si zonasPendientes no está vacía.
+        -->
+        <TextView
+            android:id="@+id/tvTituloPendientes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Zonas pendientes:"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:visibility="gone"
+            android:layout_marginBottom="4dp" />
+
+        <!--
+            Contenedor dinámico de las zonas obligatorias no inspeccionadas (☐ zona, naranja).
+            Oculto por defecto; visible cuando hay zonas pendientes.
+        -->
+        <LinearLayout
+            android:id="@+id/llPendientes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginBottom="8dp" />
+
+        <!--
+            Cabecera de zonas con FOD. Oculta por defecto (visibility="gone");
+            el adapter la muestra solo si zonasConFod no está vacía.
+        -->
+        <TextView
+            android:id="@+id/tvTituloFod"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Zonas con FOD:"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:visibility="gone"
+            android:layout_marginBottom="4dp" />
+
+        <!--
+            Contenedor dinámico de las zonas donde se detectó FOD (🚨 zona, rojo).
+            Oculto por defecto; visible cuando hay zonas con FOD.
+        -->
+        <LinearLayout
+            android:id="@+id/llFod"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Layout de ResumenInspeccionesDiariasActivity.
+    LinearLayout vertical con barra de filtros en la parte superior
+    y RecyclerView que ocupa el resto de la pantalla.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingStart="16dp"
+    android:paddingTop="24dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="8dp">
+
+    <!--
+        Spinner de filtro por aeronave.
+        La primera opción es "Todas las aeronaves" (id=null).
+        ResumenInspeccionesDiariasActivity lo rellena con las aeronaves visibles
+        para el rol del usuario logueado.
+    -->
+    <Spinner
+        android:id="@+id/spinnerFiltroAeronave"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp" />
+
+    <!--
+        Fila de botones de control de filtros.
+        Los tres botones comparten el ancho disponible mediante layout_weight;
+        el de fecha tiene el doble de peso para mostrar el texto de la fecha seleccionada.
+    -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
+
+        <!--
+            Botón selector de fecha. Abre un DatePickerDialog al pulsarlo.
+            Su texto cambia entre "Todas las fechas" y la fecha seleccionada (dd/MM/yyyy).
+            layout_weight=1.5 le da más espacio que los otros dos para mostrar la fecha.
+            singleLine + ellipsize evitan desbordamiento si el texto es largo.
+        -->
+        <Button
+            android:id="@+id/btnSeleccionarFecha"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.5"
+            android:text="Fechas"
+            android:textSize="12sp"
+            android:textAllCaps="false"
+            android:minHeight="0dp"
+            android:paddingStart="8dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="10dp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:layout_marginEnd="6dp" />
+
+        <!-- Botón que aplica los filtros seleccionados (aeronave + fecha) al RecyclerView -->
+        <Button
+            android:id="@+id/btnAplicarFiltros"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.75"
+            android:text="Aplicar"
+            android:textSize="12sp"
+            android:textAllCaps="false"
+            android:minHeight="0dp"
+            android:paddingStart="8dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="10dp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:layout_marginStart="6dp"
+            android:layout_marginEnd="6dp" />
+
+        <!-- Botón que restablece ambos filtros y restaura la lista completa -->
+        <Button
+            android:id="@+id/btnLimpiarFiltros"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.75"
+            android:text="Limpiar"
+            android:textSize="12sp"
+            android:textAllCaps="false"
+            android:minHeight="0dp"
+            android:paddingStart="8dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="10dp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:layout_marginStart="6dp" />
+    </LinearLayout>
+
+    <!--
+        Lista de tarjetas de resumen diario por aeronave/día.
+        height=0dp + layout_weight=1 hace que ocupe todo el espacio restante.
+        clipToPadding=false + paddingTop/Bottom dan espaciado al primer y último item.
+    -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerResumenInspeccionesDiarias"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp" />
+
+</LinearLayout>

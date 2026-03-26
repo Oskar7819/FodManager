@@ -1,17 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Layout para el formulario de registro de una nueva incidencia FOD.
-     Se accede desde DetalleInspeccionActivity cuando se detecta un FOD.
-     ScrollView permite desplazamiento si el teclado ocupa parte de la pantalla -->
+<!--
+    Layout de NuevaIncidenciaActivity.
+    ScrollView para accesibilidad en pantallas pequeñas con el teclado visible.
+    El formulario se divide en secciones: declarante (solo lectura),
+    descripción, tipo de FOD, zona (heredada de la inspección) y foto obligatoria.
+-->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:paddingBottom="24dp">
 
-    <!-- LinearLayout vertical que contiene todos los campos del formulario -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingBottom="8dp">
 
         <!-- Título del formulario -->
         <TextView
@@ -22,16 +26,53 @@
             android:textStyle="bold"
             android:layout_marginBottom="24dp" />
 
-        <!-- Campo para describir el objeto encontrado o el daño detectado.
-             Campo obligatorio, se valida en NuevaIncidenciaActivity.
-             inputType="textMultiLine" permite escribir varias líneas.
-             minLines="3" reserva espacio mínimo para 3 líneas de texto -->
+        <!-- Cabecera de la sección del declarante -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Declarante"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Nombre del usuario logueado (solo lectura, cargado automáticamente) -->
+        <TextView
+            android:id="@+id/tvDeclaranteNombre"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nombre: -"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Apellidos del declarante (solo lectura) -->
+        <TextView
+            android:id="@+id/tvDeclaranteApellidos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Apellidos: -"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Número de empleado del declarante (solo lectura) -->
+        <TextView
+            android:id="@+id/tvDeclaranteNumeroEmpleado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nº empleado: -"
+            android:textSize="14sp"
+            android:layout_marginBottom="16dp" />
+
+        <!--
+            Campo de texto multilinea para describir el hallazgo FOD.
+            minLines=3 garantiza una altura mínima cómoda para escribir.
+            Campo obligatorio: NuevaIncidenciaActivity valida que no esté vacío.
+        -->
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Descripción del FOD"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_marginBottom="16dp">
+
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etDescripcion"
                 android:layout_width="match_parent"
@@ -49,42 +90,62 @@
             android:textSize="14sp"
             android:layout_marginBottom="4dp" />
 
-        <!-- Spinner para clasificar el tipo de FOD según el ENUM tipo_fod de Supabase:
-             ambiental, herramientas, restos_metalicos, material_consumo,
-             personal, procedente_aeronave -->
+
+
+        <!--
+            Spinner con las categorías del ENUM tipo_fod.
+            NuevaIncidenciaActivity lo rellena con textos legibles (tiposFodMostrar)
+            pero al guardar usa el código interno (tiposFod) según el índice seleccionado.
+        -->
         <Spinner
             android:id="@+id/spinnerTipoFod"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp" />
 
-        <!-- Campo para especificar la zona del avión donde se encontró el FOD -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
+        <!-- Etiqueta de la zona (heredada de la inspección, no editable) -->
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:hint="Zona del avión"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_marginBottom="16dp">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etZonaAvion"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text" />
-        </com.google.android.material.textfield.TextInputLayout>
+            android:text="Zona del avión"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp" />
 
-        <!-- Campo opcional para el número de empleado del operario que encontró el FOD  -->
-        <com.google.android.material.textfield.TextInputLayout
+        <!--
+            Zona donde se encontró el FOD. Solo lectura: se hereda automáticamente
+            de la inspección origen y el usuario no puede modificarla.
+            Usa @android:drawable/editbox_background para parecer un campo de texto.
+        -->
+        <TextView
+            android:id="@+id/tvZonaAvion"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Número de empleado"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_marginBottom="16dp">
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etNumeroEmpleado"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text" />
-        </com.google.android.material.textfield.TextInputLayout>
+            android:text="Zona: -"
+            android:textSize="14sp"
+            android:padding="12dp"
+            android:background="@android:drawable/editbox_background"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Etiqueta del Spinner de prioridad -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Prioridad"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp" />
+
+        <!--
+            Spinner con los niveles de urgencia de la incidencia.
+            NuevaIncidenciaActivity lo rellena con prioridadesMostrar (textos legibles)
+            pero al guardar usa el código interno (prioridades) según el índice seleccionado.
+        -->
+        <Spinner
+            android:id="@+id/spinnerPrioridad"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp" />
 
         <!-- Etiqueta de la sección de foto -->
         <TextView
@@ -95,8 +156,7 @@
             android:textSize="14sp"
             android:layout_marginBottom="8dp" />
 
-        <!-- Botón para abrir la cámara del dispositivo y capturar una foto del FOD.
-             La foto es obligatoria para guardar la incidencia -->
+        <!-- Botón que abre la cámara del dispositivo para capturar la imagen del FOD -->
         <Button
             android:id="@+id/btnTomarFoto"
             android:layout_width="match_parent"
@@ -104,9 +164,11 @@
             android:text="📷 Tomar foto"
             android:layout_marginBottom="8dp" />
 
-        <!-- Vista previa de la foto capturada con la cámara.
-             Oculta por defecto (visibility="gone"), se muestra al tomar la foto.
-             scaleType="centerCrop" recorta la imagen para llenar el espacio sin deformarla -->
+        <!--
+            Preview de la foto tomada con la cámara.
+            Oculto por defecto; NuevaIncidenciaActivity lo muestra tras capturar el bitmap.
+            scaleType="centerCrop" recorta la imagen para llenar el espacio manteniendo proporciones.
+        -->
         <ImageView
             android:id="@+id/imgPreview"
             android:layout_width="match_parent"
@@ -115,8 +177,7 @@
             android:visibility="gone"
             android:layout_marginBottom="16dp" />
 
-        <!-- Botón para guardar la incidencia en Supabase.
-             Se deshabilita mientras se procesa la petición para evitar duplicados -->
+        <!-- Botón de guardado. Se deshabilita durante la subida a Storage y el INSERT -->
         <Button
             android:id="@+id/btnGuardar"
             android:layout_width="match_parent"
@@ -124,9 +185,7 @@
             android:text="Guardar incidencia"
             android:padding="12dp" />
 
-        <!-- Indicador de carga que se muestra mientras se sube la foto
-             a Supabase Storage y se inserta la incidencia en la base de datos.
-             Oculto por defecto (visibility="gone") -->
+        <!-- Indicador de carga visible durante la subida de imagen y el INSERT en Supabase -->
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"

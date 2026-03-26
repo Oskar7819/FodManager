@@ -1,16 +1,16 @@
-
 package com.example.fodmanager.data.local
 
-/* Objeto singleton para almacenar temporalmente las credenciales del usuario logueado.
-   Se usa para restaurar la sesión después de crear un nuevo usuario,
-   ya que Supabase Auth cierra la sesión actual al registrar un nuevo usuario con signUpWith.
-   Al ser un object (singleton), existe una única instancia durante toda la ejecución de la app.
-   package com.example.fodmanager.data.local   */
+/**
+ * Singleton que almacena en memoria las credenciales del usuario autenticado.
+ * Al ser un `object` de Kotlin, existe una única instancia durante toda
+ * la ejecución de la aplicación (patrón Singleton).
+ */
 object SessionManager {
-    // Email del usuario que ha iniciado sesión en la aplicación
+
+    /* Email del usuario que tiene la sesión activa en la aplicación. */
     var emailActual: String = ""
 
-    // Contraseña del usuario que ha iniciado sesión en la aplicación
-    // Se almacena en memoria para poder restaurar la sesión tras dar de alta un nuevo usuario
+    // Contraseña del usuario que tiene la sesión activa.
+
     var passwordActual: String = ""
 }

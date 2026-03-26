@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Tarjeta de estado por aeronave usada en la sección "Situación actual por avión"
+    del dashboard (HomeFragment). Se infla dinámicamente en pintarEstadoAeronaves().
+    El color de fondo (cardRoot) se establece desde código según el estado semafórico:
+    rojo → incidencias abiertas/FOD hoy, amarillo → en proceso, verde → sin incidencias, neutro → sin actividad.
+-->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardEstadoAeronave"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="2dp"
+    android:layout_marginEnd="2dp"
+    android:layout_marginTop="6dp"
+    android:layout_marginBottom="6dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="3dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Nombre de la aeronave: "Modelo - NumSerie" -->
+        <TextView
+            android:id="@+id/tvAeronaveEstado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="A400M - MSN001"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <!--
+            Estado semafórico de incidencias activas:
+            "🟢 sin incidencias" / "🟡 N en proceso" / "🔴 N abiertas"
+        -->
+        <TextView
+            android:id="@+id/tvEstadoActualAeronave"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🟢 Estado actual: sin incidencias activas"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Número de inspecciones realizadas en la aeronave el día actual -->
+        <TextView
+            android:id="@+id/tvActividadHoyAeronave"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📋 Inspecciones realizadas hoy: 0"
+            android:textSize="14sp"
+            android:layout_marginBottom="4dp" />
+
+        <!--
+            Resultado del día: sin FOD, con FOD detectado o sin inspecciones registradas todavía.
+        -->
+        <TextView
+            android:id="@+id/tvResultadoHoyAeronave"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="✅ Todas las inspecciones de hoy están sin FOD"
+            android:textSize="14sp" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

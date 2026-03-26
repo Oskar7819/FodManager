@@ -12,38 +12,57 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.fodmanager.ui.inspecciones.DetalleInspeccionActivity
-import com.example.fodmanager.ui.inspecciones.InspeccionesAdapter
-import com.example.fodmanager.ui.inspecciones.NuevaInspeccionActivity
 import com.example.fodmanager.R
 import com.example.fodmanager.data.models.Aeronave
 import com.example.fodmanager.data.models.Inspeccion
 import com.example.fodmanager.data.models.Usuario
 import com.example.fodmanager.data.remote.supabase
+import com.example.fodmanager.ui.inspecciones.DetalleInspeccionActivity
+import com.example.fodmanager.ui.inspecciones.InspeccionesAdapter
+import com.example.fodmanager.ui.inspecciones.NuevaInspeccionActivity
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
 
-/*  Fragment que muestra la lista de inspecciones en el tab Inspecciones del Bottom Navigation.
-    Las inspecciones mostradas se filtran según el rol del usuario:
-    - rolesGenerales (administrador, head_plant, focal_point_fod) ven todas las inspecciones
-    - Resto de roles (mando_gp4, quality, operario) → solo ven las de su aeronave asignada  */
+/**
+ * Fragment del tab "Inspecciones" del Bottom Navigation.
+ *
+ * Responsabilidades:
+ * - Mostrar la lista de inspecciones filtrada según el rol del usuario, ordenada
+ *   de más reciente a más antigua.
+ * - Mantener mapas auxiliares (aeronaves y usuarios) para enriquecer cada tarjeta.
+ * - Abrir NuevaInspeccionActivity desde el FAB y recargar la lista al regresar.
+ * - Abrir DetalleInspeccionActivity al pulsar una tarjeta.
+ *
+ * Regla de visibilidad (misma que IncidenciasFragment):
+ * - rolesGenerales ven todas las inspecciones del sistema.
+ * - Resto  solo ven las inspecciones de su aeronave asignada.
+ */
 class InspeccionesFragment : Fragment() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: InspeccionesAdapter
+
     private val inspecciones = mutableListOf<Inspeccion>()
 
-    // Mapa que relaciona el ID de cada aeronave con su nombre (modelo - número de serie)
-    // Se usa para mostrar el nombre de la aeronave en cada tarjeta de inspección
+    /** Mapa aeronave_id → "Modelo - NumSerie" para mostrar el nombre en cada tarjeta. */
     private val aeronavesMap = mutableMapOf<Int, String>()
 
-    // Roles que tienen visión general de todas las inspecciones sin filtro por aeronave
-    private val rolesGenerales = listOf("administrador", "head_plant", "focal_point_fod")
+    /** Mapa usuario_id → [Usuario] para mostrar el nombre del inspector en cada tarjeta. */
+    private val usuariosMap = mutableMapOf<Int, Usuario>()
 
-    // Launcher para abrir NuevaInspeccionActivity y recargar la lista
-    // si se creó una nueva inspección (cuando devuelve RESULT_OK)
+    /** Roles con visión global de todas las inspecciones del sistema. */
+    private val rolesGenerales = listOf(
+        "administrador",
+        "head_plant",
+        "focal_point_fod"
+    )
+
+    /**
+     * Launcher para [NuevaInspeccionActivity].
+     * Recarga la lista si el resultado es [Activity.RESULT_OK].
+     */
     private val nuevaInspeccionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -53,25 +72,23 @@ class InspeccionesFragment : Fragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val view = inflater.inflate(R.layout.fragment_inspecciones, container, false)
 
         recyclerView = view.findViewById(R.id.recyclerInspecciones)
 
-        // Configura el adapter con la lista de inspecciones y el mapa de aeronaves.
-        // Al pulsar una tarjeta abre DetalleInspeccionActivity pasando el ID de la inspección
-        adapter = InspeccionesAdapter(inspecciones, aeronavesMap) { inspeccion ->
+        adapter = InspeccionesAdapter(inspecciones, aeronavesMap, usuariosMap) { inspeccion ->
             val intent = Intent(requireContext(), DetalleInspeccionActivity::class.java)
             intent.putExtra("inspeccion_id", inspeccion.id)
             startActivity(intent)
         }
+
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
 
-        // FAB (Floating Action Button) para crear una nueva inspección
-        // Usa el launcher para detectar si se creó una y recargar la lista
         val fab = view.findViewById<FloatingActionButton>(R.id.fabNuevaInspeccion)
         fab.setOnClickListener {
             val intent = Intent(requireContext(), NuevaInspeccionActivity::class.java)
@@ -82,20 +99,25 @@ class InspeccionesFragment : Fragment() {
         return view
     }
 
-    // Carga las inspecciones y aeronaves desde Supabase según el rol del usuario logueado
+    /**
+     * Carga todos los datos necesarios para el listado:
+     * 1. Usuario logueado → determina el filtro (global o por aeronave).
+     * 2. Aeronaves → construye aeronavesMap.
+     * 3. Usuarios → construye usuariosMap.
+     * 4. Inspecciones visibles, ordenadas descendentemente por fecha.
+     *
+     * El ordenamiento se realiza en cliente porque la API no expone
+     * cómodamente un `.order()` con la versión del SDK actual.
+     */
     private fun cargarDatos() {
         lifecycleScope.launch {
             try {
-                // Obtiene el email de la sesión actual de Supabase Auth
-                val email = supabase.auth.currentSessionOrNull()?.user?.email
+                val email = supabase.auth.currentSessionOrNull()?.user?.email.orEmpty()
 
-                // Consulta el usuario logueado para obtener su rol y aeronave asignada
                 val usuarioLogueado = supabase.postgrest["usuarios"]
-                    .select { filter { eq("email", email ?: "") } }
+                    .select { filter { eq("email", email) } }
                     .decodeSingle<Usuario>()
 
-                // Carga todas las aeronaves para construir el mapa ID → nombre
-                // necesario para mostrar el nombre de la aeronave en cada tarjeta
                 val aeronaves = supabase.postgrest["aeronaves"]
                     .select()
                     .decodeList<Aeronave>()
@@ -103,23 +125,29 @@ class InspeccionesFragment : Fragment() {
                 aeronavesMap.clear()
                 aeronaves.forEach { aeronavesMap[it.id] = "${it.modelo} - ${it.numeroSerie}" }
 
-                // Carga todas las inspecciones o solo las de la aeronave del usuario según su rol
+                val usuarios = supabase.postgrest["usuarios"]
+                    .select()
+                    .decodeList<Usuario>()
+
+                usuariosMap.clear()
+                usuarios.forEach { usuariosMap[it.id] = it }
+
                 val resultado = if (usuarioLogueado.rol in rolesGenerales) {
-                    // Roles generales ven todas las inspecciones del sistema
                     supabase.postgrest["inspecciones"]
                         .select()
                         .decodeList<Inspeccion>()
                 } else {
-                    // El resto solo ve las inspecciones de su aeronave asignada
-                    // Si aeronaveId es null usa -1 para que no devuelva resultados
                     supabase.postgrest["inspecciones"]
                         .select { filter { eq("aeronave_id", usuarioLogueado.aeronaveId ?: -1) } }
                         .decodeList<Inspeccion>()
                 }
 
+                // Ordena de más reciente a más antigua usando la fecha ISO como string
+                // (funciona correctamente porque el formato "YYYY-MM-DD..." es lexicográficamente ordenable)
+                val resultadoOrdenado = resultado.sortedByDescending { it.fecha ?: "" }
+
                 inspecciones.clear()
-                inspecciones.addAll(resultado)
-                // Notifica al adapter que los datos han cambiado para actualizar la UI
+                inspecciones.addAll(resultadoOrdenado)
                 adapter.notifyDataSetChanged()
 
             } catch (e: Exception) {
