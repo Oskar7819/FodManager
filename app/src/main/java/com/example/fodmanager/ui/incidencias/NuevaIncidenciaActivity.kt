@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.MenuItem
@@ -23,7 +24,7 @@ import com.example.fodmanager.R
 import com.example.fodmanager.data.remote.supabase
 import com.google.android.material.textfield.TextInputEditText
 import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.*
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
@@ -32,100 +33,166 @@ import java.io.ByteArrayOutputStream
 import java.util.UUID
 
 /**
- * Payload para el INSERT en la tabla `incidencias_fod`.
- * La zona se hereda de la inspección origen (no la introduce el usuario).
- * El estado inicial siempre es "abierta".
+ * Payload que se inserta en la tabla `incidencias_fod`.
+ *
+ * La zona y la aeronave se heredan de la inspección origen.
+ * El estado inicial siempre será "abierta".
  */
 @Serializable
 data class InsertIncidenciaFodPayload(
+    // ID de la inspección desde la que se crea la incidencia
     @SerialName("inspeccion_id") val inspeccionId: Int,
+
+    // ID del usuario que declara la incidencia
     @SerialName("usuario_id") val usuarioId: Int,
+
+    // ID de la aeronave asociada a la incidencia, puede ser nulo
     @SerialName("aeronave_id") val aeronaveId: Int?,
+
+    // Descripción escrita por el usuario
     val descripcion: String,
+
+    // Zona del avión donde se detectó el FOD
     @SerialName("zona_avion") val zonaAvion: String?,
+
+    // Número de empleado del declarante, puede ser nulo
     @SerialName("numero_empleado") val numeroEmpleado: String?,
+
+    // URL pública de la imagen subida a Storage, puede ser nula
     @SerialName("imagen_url") val imagenUrl: String?,
+
+    // Estado inicial de la incidencia
     val estado: String = "abierta",
+
+    // Tipo de FOD seleccionado, puede ser nulo
     @SerialName("tipo_fod") val tipoFod: String?,
+
+    // Prioridad seleccionada, puede ser nula
     val prioridad: String?
 )
 
 /**
- * Proyección del usuario logueado con los campos necesarios para registrar
- * la incidencia y verificar que su rol tiene permiso.
+ * Proyección mínima del usuario logueado para registrar la incidencia.
  */
 @Serializable
 data class UsuarioIncidenciaActual(
+    // ID interno del usuario en la tabla usuarios
     val id: Int,
+
+    // Nombre del usuario
     val nombre: String,
+
+    // Apellidos del usuario
     val apellidos: String,
+
+    // Rol del usuario
     val rol: String,
+
+    // Número de empleado, puede ser nulo
     @SerialName("numero_empleado") val numeroEmpleado: String? = null
 )
 
 /**
- * Proyección de la inspección origen con los campos necesarios para
- * crear la incidencia vinculada a ella.
+ * Proyección mínima de la inspección origen.
  */
 @Serializable
 data class InspeccionOrigenIncidencia(
+    // ID de la inspección
     val id: Int,
+
+    // Zona inspeccionada
     val zona: String,
+
+    // ID de la aeronave asociada a la inspección, puede ser nulo
     @SerialName("aeronave_id") val aeronaveId: Int? = null,
+
+    // Indica si en la inspección se detectó FOD
     @SerialName("con_fod") val conFod: Boolean
 )
 
 /**
- * Activity que muestra el formulario para registrar una nueva incidencia FOD.
+ * Pantalla para registrar una nueva incidencia FOD vinculada a una inspección previa.
  *
- * La incidencia siempre está vinculada a una InspeccionOrigenIncidencia previa.
- * De ella hereda la zona inspeccionada y la aeronave asociada, por lo que el usuario
- * no puede modificar esos campos: solo introduce descripción, tipo de FOD y foto.
- *
- * Restricciones de acceso:
- * - Solo los roles en rolesQuePuedenRegistrarIncidencia pueden llegar a esta pantalla.
- *   `focal_point_fod` y `head_plant` son rechazados al cargar el usuario.
- * - Si la inspección origen tiene `conFod = false`, el botón Guardar se deshabilita.
- *
- * Flujo de guardado:
- * 1. Comprimir la foto a JPEG (80 % de calidad) y subirla a Supabase Storage (`fod-images`).
- * 2. Obtener la URL pública de la imagen.
- * 3. Insertar el registro en la tabla `incidencias_fod`.
- * 4. Devolver RESULT_OK y cerrar la activity.
+ * Flujo:
+ * 1. Cargar usuario logueado.
+ * 2. Cargar inspección origen.
+ * 3. Permitir tomar foto.
+ * 4. Subir imagen a Supabase Storage.
+ * 5. Insertar incidencia en `incidencias_fod`.
  */
 class NuevaIncidenciaActivity : AppCompatActivity() {
 
+    // Campo de texto para la descripción de la incidencia
     private lateinit var etDescripcion: TextInputEditText
+
+    // Botón para abrir la cámara
     private lateinit var btnTomarFoto: Button
+
+    // Vista previa de la foto capturada
     private lateinit var imgPreview: ImageView
+
+    // Botón para guardar la incidencia
     private lateinit var btnGuardar: Button
+
+    // Barra de progreso mostrada durante el guardado
     private lateinit var progressBar: ProgressBar
+
+    // Spinner para elegir el tipo de FOD
     private lateinit var spinnerTipoFod: Spinner
 
-    private lateinit var tvDeclaranteNombre: TextView
-    private lateinit var tvDeclaranteApellidos: TextView
-    private lateinit var tvDeclaranteNumeroEmpleado: TextView
-    private lateinit var tvZonaAvion: TextView
-
+    // Spinner para elegir la prioridad
     private lateinit var spinnerPrioridad: Spinner
 
-    /** Bitmap capturado por la cámara; es obligatorio antes de guardar. */
+    // TextView con el nombre del declarante
+    private lateinit var tvDeclaranteNombre: TextView
+
+    // TextView con los apellidos del declarante
+    private lateinit var tvDeclaranteApellidos: TextView
+
+    // TextView con el número de empleado del declarante
+    private lateinit var tvDeclaranteNumeroEmpleado: TextView
+
+    // TextView con la zona del avión
+    private lateinit var tvZonaAvion: TextView
+
+    // Bitmap capturado con la cámara
     private var fotoBitmap: Bitmap? = null
 
+    // ID de la inspección recibida por Intent
     private var inspeccionId: Int = -1
+
+    // Usuario cargado desde Supabase
     private var usuarioLogueado: UsuarioIncidenciaActual? = null
+
+    // Inspección origen cargada desde Supabase
     private var inspeccionOrigen: InspeccionOrigenIncidencia? = null
 
-    /** Roles que pueden registrar incidencias FOD. `focal_point_fod` y `head_plant` quedan excluidos. */
-    private val rolesQuePuedenRegistrarIncidencia = listOf("operario", "mando_gp4", "quality")
-
-    /** Valores internos del ENUM `tipo_fod` usados al insertar el registro. */
-    private val tiposFod = listOf(
-        "ambiental", "herramientas", "restos_metalicos",
-        "material_consumo", "personal", "procedente_aeronave"
+    /**
+     * Roles autorizados para registrar incidencias FOD.
+     * `focal_point_fod` y `head_plant` quedan fuera.
+     */
+    private val rolesQuePuedenRegistrarIncidencia = listOf(
+        "operario",
+        "mando_gp4",
+        "quality"
     )
 
-    /** Textos legibles con emojis mostrados en el Spinner al usuario. */
+    /**
+     * Valores internos del enum `tipo_fod`.
+     * Estos son los que realmente se guardan en la base de datos.
+     */
+    private val tiposFod = listOf(
+        "ambiental",
+        "herramientas",
+        "restos_metalicos",
+        "material_consumo",
+        "personal",
+        "procedente_aeronave"
+    )
+
+    /**
+     * Valores visibles para el Spinner de tipo de FOD.
+     */
     private val tiposFodMostrar = listOf(
         "🌫️ Ambiental (suciedad y polvo)",
         "🔧 Herramientas (llaves, destornilladores...)",
@@ -135,62 +202,101 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
         "✈️ Procedente de aeronave (sellante, pintura...)"
     )
 
+    /**
+     * Valores internos del campo prioridad.
+     */
     private val prioridades = listOf("baja", "alta")
 
+    /**
+     * Valores visibles en el Spinner de prioridad.
+     */
     private val prioridadesMostrar = listOf(
         "🟢 Baja",
         "🔴 Alta"
-
     )
 
     /**
-     * Launcher para la cámara. Si el resultado es exitoso, almacena el Bitmap
-     * en fotoBitmap y lo muestra en el preview.
+     * Launcher de cámara.
+     *
+     * Usa la forma moderna de leer el Bitmap desde extras:
+     * - En Android 13+ usa getParcelable("data", Bitmap::class.java)
+     * - En versiones anteriores usa getParcelable<Bitmap>("data")
+     *
+     * Nota:
+     * `data` aquí devuelve normalmente un thumbnail de la foto,
+     * no la imagen completa en alta resolución.
      */
     private val camaraLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        // Si la captura fue correcta, intentamos obtener el bitmap
         if (result.resultCode == RESULT_OK) {
-            val bitmap = result.data?.extras?.get("data") as? Bitmap
+            val bitmap = result.data?.extras?.let { extras ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    // Forma moderna para Android 13 o superior
+                    extras.getParcelable("data", Bitmap::class.java)
+                } else {
+                    // Forma antigua para versiones anteriores
+                    @Suppress("DEPRECATION")
+                    extras.getParcelable<Bitmap>("data")
+                }
+            }
+
+            // Si el bitmap existe, se guarda y se muestra en pantalla
             if (bitmap != null) {
                 fotoBitmap = bitmap
                 imgPreview.setImageBitmap(bitmap)
                 imgPreview.isVisible = true
+            } else {
+                // Si no se pudo recuperar la imagen, se informa al usuario
+                Toast.makeText(
+                    this,
+                    "No se pudo obtener la imagen de la cámara",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
 
     /**
-     * Launcher para solicitar el permiso de cámara.
-     * Si se concede, abre la cámara directamente; si se deniega, muestra un aviso.
+     * Launcher para pedir permiso de cámara.
      */
     private val permisoCamaraLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { concedido ->
-        if (concedido) abrirCamara()
-        else Toast.makeText(this, "Permiso de cámara denegado", Toast.LENGTH_SHORT).show()
+        // Si el usuario concede permiso, se abre la cámara
+        if (concedido) {
+            abrirCamara()
+        } else {
+            // Si no lo concede, se muestra mensaje informativo
+            Toast.makeText(this, "Permiso de cámara denegado", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Asigna el layout de la activity
         setContentView(R.layout.activity_nueva_incidencia)
 
+        // Configuración de la ActionBar
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Nueva Incidencia FOD"
 
+        // Inicialización de vistas
         etDescripcion = findViewById(R.id.etDescripcion)
         btnTomarFoto = findViewById(R.id.btnTomarFoto)
         imgPreview = findViewById(R.id.imgPreview)
         btnGuardar = findViewById(R.id.btnGuardar)
         progressBar = findViewById(R.id.progressBar)
         spinnerTipoFod = findViewById(R.id.spinnerTipoFod)
+        spinnerPrioridad = findViewById(R.id.spinnerPrioridad)
+
         tvDeclaranteNombre = findViewById(R.id.tvDeclaranteNombre)
         tvDeclaranteApellidos = findViewById(R.id.tvDeclaranteApellidos)
         tvDeclaranteNumeroEmpleado = findViewById(R.id.tvDeclaranteNumeroEmpleado)
         tvZonaAvion = findViewById(R.id.tvZonaAvion)
-        spinnerPrioridad = findViewById(R.id.spinnerPrioridad)
 
-
+        // Spinner de prioridad
         val adapterPrioridad = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
@@ -199,72 +305,115 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
         adapterPrioridad.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerPrioridad.adapter = adapterPrioridad
 
-        // El Spinner muestra textos legibles pero al guardar se usa el código interno de tiposFod
-        val adapterTipo = ArrayAdapter(this, android.R.layout.simple_spinner_item, tiposFodMostrar)
+        // Spinner de tipo FOD
+        val adapterTipo = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            tiposFodMostrar
+        )
         adapterTipo.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerTipoFod.adapter = adapterTipo
 
+        // Recuperar inspección origen desde el Intent
         inspeccionId = intent.getIntExtra("inspeccion_id", -1)
 
+        // Si no llega una inspección válida, se cierra la pantalla
         if (inspeccionId == -1) {
             Toast.makeText(this, "Error: inspección no válida", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
 
+        // Carga inicial de datos
         cargarUsuarioLogueado()
         cargarInspeccionOrigen()
 
+        // Eventos
         btnTomarFoto.setOnClickListener { verificarPermisoCamara() }
         btnGuardar.setOnClickListener { guardarIncidencia() }
     }
 
     /**
-     * Carga el usuario logueado desde Supabase, rellena sus datos en la UI
-     * y verifica que su rol esté en rolesQuePuedenRegistrarIncidencia.
-     * Si no tiene permiso, cierra la activity con un mensaje informativo.
+     * Carga el usuario logueado desde la tabla `usuarios`,
+     * usando el email de la sesión actual de Supabase Auth.
      */
     private fun cargarUsuarioLogueado() {
         lifecycleScope.launch {
             try {
+                // Obtiene el email del usuario autenticado
                 val email = supabase.auth.currentSessionOrNull()?.user?.email.orEmpty()
 
+                // Si no hay email, no hay sesión válida
+                if (email.isBlank()) {
+                    Toast.makeText(
+                        this@NuevaIncidenciaActivity,
+                        "No hay sesión válida",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    finish()
+                    return@launch
+                }
+
+                // Busca el usuario en la tabla usuarios por su email
                 val usuario = supabase.postgrest["usuarios"]
-                    .select { filter { eq("email", email) } }
+                    .select {
+                        filter {
+                            eq("email", email)
+                        }
+                    }
                     .decodeSingle<UsuarioIncidenciaActual>()
 
                 usuarioLogueado = usuario
 
+                // Pintar datos del usuario en pantalla
                 tvDeclaranteNombre.text = "Nombre: ${usuario.nombre}"
                 tvDeclaranteApellidos.text = "Apellidos: ${usuario.apellidos}"
-                tvDeclaranteNumeroEmpleado.text = "Nº empleado: ${usuario.numeroEmpleado ?: "No especificado"}"
+                tvDeclaranteNumeroEmpleado.text =
+                    "Nº empleado: ${usuario.numeroEmpleado ?: "No especificado"}"
 
+                // Verificación de rol
                 if (usuario.rol !in rolesQuePuedenRegistrarIncidencia) {
-                    Toast.makeText(this@NuevaIncidenciaActivity, "Tu rol no puede registrar incidencias FOD.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        this@NuevaIncidenciaActivity,
+                        "Tu rol no puede registrar incidencias FOD.",
+                        Toast.LENGTH_LONG
+                    ).show()
                     finish()
                 }
 
             } catch (e: Exception) {
-                Toast.makeText(this@NuevaIncidenciaActivity, "Error cargando declarante: ${e.message}", Toast.LENGTH_LONG).show()
+                // Muestra error si no se puede cargar el usuario
+                Toast.makeText(
+                    this@NuevaIncidenciaActivity,
+                    "Error cargando declarante: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
     }
 
     /**
-     * Carga la inspección origen y muestra su zona en la UI.
-     * Si la inspección tiene `conFod = false`, deshabilita el botón Guardar:
-     * no tiene sentido registrar un FOD en una inspección sin FOD declarado.
+     * Carga la inspección origen desde la tabla `inspecciones`.
+     * Muestra la zona y bloquea el guardado si esa inspección no tiene FOD.
      */
     private fun cargarInspeccionOrigen() {
         lifecycleScope.launch {
             try {
+                // Busca la inspección origen por su id
                 val inspeccion = supabase.postgrest["inspecciones"]
-                    .select { filter { eq("id", inspeccionId) } }
+                    .select {
+                        filter {
+                            eq("id", inspeccionId)
+                        }
+                    }
                     .decodeSingle<InspeccionOrigenIncidencia>()
 
                 inspeccionOrigen = inspeccion
+
+                // Mostrar zona en la interfaz
                 tvZonaAvion.text = "Zona: ${inspeccion.zona}"
 
+                // Si la inspección no tiene FOD, no se puede crear incidencia
                 if (!inspeccion.conFod) {
                     btnGuardar.isEnabled = false
                     Toast.makeText(
@@ -275,87 +424,122 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
                 }
 
             } catch (e: Exception) {
-                Toast.makeText(this@NuevaIncidenciaActivity, "Error cargando inspección: ${e.message}", Toast.LENGTH_LONG).show()
+                // Muestra error si no se puede cargar la inspección
+                Toast.makeText(
+                    this@NuevaIncidenciaActivity,
+                    "Error cargando inspección: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
     }
 
     /**
-     * Comprueba si el permiso de cámara ya está concedido.
-     * Si lo está, abre la cámara directamente; si no, lo solicita con [permisoCamaraLauncher].
+     * Comprueba si ya existe permiso de cámara.
+     * Si no existe, lo solicita.
      */
     private fun verificarPermisoCamara() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+        // Comprueba si el permiso de cámara ya está concedido
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
             abrirCamara()
         } else {
+            // Si no está concedido, lo solicita al usuario
             permisoCamaraLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
-    /** Lanza la cámara del dispositivo en modo captura de imagen. */
+    /**
+     * Lanza la app de cámara del dispositivo.
+     *
+     * Este enfoque devuelve normalmente una miniatura en extras["data"].
+     */
     private fun abrirCamara() {
+        // Lanza el intent de captura de imagen
         camaraLauncher.launch(Intent(MediaStore.ACTION_IMAGE_CAPTURE))
     }
 
     /**
-     * Valida los datos del formulario y guarda la incidencia en Supabase.
+     * Guarda la incidencia FOD en Supabase.
      *
-     * Validaciones previas:
-     * - Usuario y aeronave cargados correctamente.
-     * - Rol con permiso (doble verificación defensiva).
-     * - Inspección con `conFod = true`.
-     * - Descripción no vacía.
-     * - Foto obligatoria.
-     *
-     * Proceso de guardado:
-     * 1. Comprimir [fotoBitmap] a JPEG (80 %) y subir al bucket `fod-images`.
-     * 2. Obtener la URL pública de la imagen subida.
-     * 3. Insertar [InsertIncidenciaFodPayload] en `incidencias_fod`.
+     * Pasos:
+     * 1. Validar usuario, inspección, descripción y foto.
+     * 2. Comprimir imagen.
+     * 3. Subir imagen al bucket `fod-images`.
+     * 4. Obtener URL pública.
+     * 5. Insertar registro en `incidencias_fod`.
      */
     private fun guardarIncidencia() {
+        // Recupera el usuario cargado o muestra error
         val usuario = usuarioLogueado ?: run {
-            Toast.makeText(this, "No se ha podido cargar el usuario logeado", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val inspeccion = inspeccionOrigen ?: run {
-            Toast.makeText(this, "No se ha podido cargar la inspección origen", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "No se ha podido cargar el usuario logueado", Toast.LENGTH_SHORT)
+                .show()
             return
         }
 
-        if (usuario.rol !in rolesQuePuedenRegistrarIncidencia) {
-            Toast.makeText(this, "Tu rol no puede registrar incidencias FOD.", Toast.LENGTH_SHORT).show()
+        // Recupera la inspección cargada o muestra error
+        val inspeccion = inspeccionOrigen ?: run {
+            Toast.makeText(this, "No se ha podido cargar la inspección origen", Toast.LENGTH_SHORT)
+                .show()
             return
         }
+
+        // Doble comprobación defensiva de rol
+        if (usuario.rol !in rolesQuePuedenRegistrarIncidencia) {
+            Toast.makeText(this, "Tu rol no puede registrar incidencias FOD.", Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+
+        // La inspección debe estar marcada con FOD
         if (!inspeccion.conFod) {
             Toast.makeText(this, "La inspección origen no tiene FOD", Toast.LENGTH_SHORT).show()
             return
         }
 
+        // Recoger datos del formulario
         val descripcion = etDescripcion.text?.toString()?.trim().orEmpty()
         val tipoFod = tiposFod[spinnerTipoFod.selectedItemPosition]
         val prioridad = prioridades[spinnerPrioridad.selectedItemPosition]
 
+        // Validación de descripción
         if (descripcion.isBlank()) {
             etDescripcion.error = "La descripción es obligatoria"
             return
         }
+
+        // La foto es obligatoria
         if (fotoBitmap == null) {
             Toast.makeText(this, "La foto es obligatoria", Toast.LENGTH_SHORT).show()
             return
         }
 
+        // Bloquear botón y mostrar progreso
         btnGuardar.isEnabled = false
         progressBar.isVisible = true
 
         lifecycleScope.launch {
             try {
-                // Comprimir y subir la imagen al bucket "fod-images"
+                // 1) Comprimir imagen a JPEG con calidad 80
                 val stream = ByteArrayOutputStream()
                 fotoBitmap!!.compress(Bitmap.CompressFormat.JPEG, 80, stream)
+
+                // 2) Nombre único del archivo
                 val nombreArchivo = "fod_${UUID.randomUUID()}.jpg"
-                supabase.storage["fod-images"].upload(nombreArchivo, stream.toByteArray())
+
+                // 3) Subir al bucket de Storage
+                supabase.storage["fod-images"].upload(
+                    nombreArchivo,
+                    stream.toByteArray()
+                )
+
+                // 4) Obtener URL pública
                 val imagenUrl = supabase.storage["fod-images"].publicUrl(nombreArchivo)
 
+                // 5) Insertar incidencia en la tabla
                 supabase.postgrest["incidencias_fod"].insert(
                     InsertIncidenciaFodPayload(
                         inspeccionId = inspeccion.id,
@@ -370,28 +554,42 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
                     )
                 )
 
-                runOnUiThread {
-                    Toast.makeText(this@NuevaIncidenciaActivity, "Incidencia guardada", Toast.LENGTH_SHORT).show()
-                    setResult(RESULT_OK)
-                    finish()
-                }
+                // Muestra mensaje de éxito
+                Toast.makeText(
+                    this@NuevaIncidenciaActivity,
+                    "Incidencia guardada",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                // Devuelve resultado correcto y cierra la activity
+                setResult(RESULT_OK)
+                finish()
 
             } catch (e: Exception) {
-                runOnUiThread {
-                    Toast.makeText(this@NuevaIncidenciaActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                    btnGuardar.isEnabled = true
-                    progressBar.isVisible = false
-                }
+                // Muestra mensaje de error si falla el guardado
+                Toast.makeText(
+                    this@NuevaIncidenciaActivity,
+                    "Error: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+
+                // Reactiva el botón y oculta el progreso para permitir reintento
+                btnGuardar.isEnabled = true
+                progressBar.isVisible = false
             }
         }
     }
 
-    /** Gestiona el botón de atrás de la ActionBar. */
+    /**
+     * Gestiona el botón atrás de la ActionBar.
+     */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == android.R.id.home) {
+        return if (item.itemId == android.R.id.home) {
+            // Cierra la pantalla al pulsar atrás en la barra superior
             finish()
-            return true
+            true
+        } else {
+            super.onOptionsItemSelected(item)
         }
-        return super.onOptionsItemSelected(item)
     }
 }

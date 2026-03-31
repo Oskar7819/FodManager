@@ -19,80 +19,74 @@ import com.example.fodmanager.data.models.IncidenciaFod
 import com.example.fodmanager.data.models.Inspeccion
 import com.example.fodmanager.data.models.Usuario
 import com.example.fodmanager.data.remote.supabase
+import com.example.fodmanager.data.repository.UsuarioRepository
 import com.example.fodmanager.ui.inspecciones.ResumenInspeccionesDiariasActivity
 import com.google.android.material.card.MaterialCardView
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.*
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
-/**
- * Modelo de datos para el resumen diario agrupado de inspecciones por aeronave y día.
- *
- * Se construye en HomeFragment.pintarUltimasInspeccionesGlobales agrupando todas
- * las inspecciones de una misma aeronave en el mismo día en un único objeto,
- * de forma que la tarjeta del dashboard muestre el estado global de la jornada.
- *
- * @property fechaDia             Fecha en formato "YYYY-MM-DD".
- * @property aeronaveTexto        Nombre legible de la aeronave ("Modelo - NumSerie").
- * @property zonasInspeccionadas  Zonas obligatorias que sí fueron inspeccionadas ese día.
- * @property zonasFaltantes       Zonas obligatorias que no se inspeccionaron ese día.
- * @property zonasConFod          Zonas en las que se detectó FOD ese día.
- * @property hayFod               true si al menos una zona registró FOD ese día.
- */
+// Clase auxiliar que resume el estado global de una inspección por día y aeronave
 data class InspeccionGlobalResumen(
+    // Fecha del día de la inspección
     val fechaDia: String,
+
+    // Texto descriptivo de la aeronave
     val aeronaveTexto: String,
+
+    // Lista de zonas que sí fueron inspeccionadas
     val zonasInspeccionadas: List<String>,
+
+    // Lista de zonas obligatorias que faltan por inspeccionar
     val zonasFaltantes: List<String>,
+
+    // Lista de zonas donde se detectó FOD
     val zonasConFod: List<String>,
+
+    // Indica si en esa inspección hubo FOD
     val hayFod: Boolean
 )
 
-/**
- * Fragment de la pantalla principal ("Home") del Bottom Navigation.
- *
- * Actúa como dashboard operativo del hangar. Muestra:
- * - Saludo personalizado al usuario logueado.
- * - Texto de resumen adaptado al rol (pintarResumenRol).
- * - KPIs numéricos: inspecciones de hoy, incidencias abiertas/en proceso, aeronaves activas (pintarKpis).
- * - Estado por aeronave con código de color (pintarEstadoAeronaves).
- * - Últimas 5 incidencias FOD (pintarUltimasIncidencias).
- * - Últimas 5 inspecciones globales agrupadas por aeronave/día (pintarUltimasInspeccionesGlobales).
- * - Botón de acceso a ResumenInspeccionesDiariasActivity.
- *
- * La información visible se filtra por rol (misma lógica que el resto de fragments):
- * - rolesGenerales, datos de todo el hangar.
- * - Resto, datos de la aeronave asignada únicamente.
- */
+// Fragment principal del dashboard o panel de inicio
 class HomeFragment : Fragment() {
 
+    // Texto de bienvenida al usuario
     private lateinit var tvBienvenida: TextView
+
+    // Texto con el resumen según el rol del usuario
     private lateinit var tvResumenRol: TextView
+
+    // Botón para abrir el resumen diario de inspecciones
     private lateinit var btnVerResumenDiario: Button
 
-    // KPIs numéricos del dashboard
+    // KPI de inspecciones realizadas hoy
     private lateinit var tvKpiInspeccionesHoy: TextView
+
+    // KPI de incidencias abiertas
     private lateinit var tvKpiAbiertas: TextView
+
+    // KPI de incidencias en proceso
     private lateinit var tvKpiEnProceso: TextView
+
+    // KPI de aeronaves activas visibles
     private lateinit var tvKpiAeronavesActivas: TextView
 
-    // Contenedores de las secciones dinámicas del dashboard
+    // Contenedor para mostrar el estado de las aeronaves
     private lateinit var llEstadoAeronaves: LinearLayout
+
+    // Contenedor para mostrar las últimas incidencias
     private lateinit var llUltimasIncidencias: LinearLayout
+
+    // Contenedor para mostrar las últimas inspecciones globales
     private lateinit var llUltimasInspeccionesGlobales: LinearLayout
 
-    // Roles con visión global de todo el hangar.
+    // Roles que tienen acceso a una vista global
     private val rolesGenerales = listOf("administrador", "head_plant", "focal_point_fod")
 
-    /**
-     * Lista de zonas que deben inspeccionarse obligatoriamente cada jornada.
-     * Se compara con las zonas realmente inspeccionadas para calcular
-     * completitud e identificar zonas pendientes.
-     */
+    // Lista de zonas obligatorias que forman parte de una inspección global completa
     private val zonasObligatorias = listOf(
         "COCKPIT + DRAWBRIDGE", "LMWS + ESCALERAS", "AVIONIC BAY",
         "CARGO HOLD FWD", "CARGO HOLD AFT", "CONE",
@@ -100,25 +94,28 @@ class HomeFragment : Fragment() {
         "NLG", "MLG", "TOP FUSELAGE", "ZONA EXTERIOR"
     )
 
-    // Colores reutilizados en varias secciones del dashboard
+    // Colores usados para resaltar distintos estados del dashboard
     private val colorNaranjaPendiente = Color.parseColor("#F57C00")
     private val colorFondoVerdeSuave = Color.parseColor("#E8F5E9")
     private val colorFondoNaranjaSuave = Color.parseColor("#FFF3E0")
     private val colorFondoRojoSuave = Color.parseColor("#FFEBEE")
 
-    // Colores de fondo para las tarjetas de estado por aeronave
-    private val colorFondoEstadoVerde = Color.parseColor("#E8F5E9")    // Sin incidencias activas
-    private val colorFondoEstadoAmarillo = Color.parseColor("#FFF8E1") // Incidencias en proceso
-    private val colorFondoEstadoRojo = Color.parseColor("#FFEBEE")     // Incidencias abiertas o FOD hoy
-    private val colorFondoEstadoNeutro = Color.parseColor("#F5F5F5")   // Sin actividad hoy
+    // Colores de fondo para tarjetas de estado de aeronaves
+    private val colorFondoEstadoVerde = Color.parseColor("#E8F5E9")
+    private val colorFondoEstadoAmarillo = Color.parseColor("#FFF8E1")
+    private val colorFondoEstadoRojo = Color.parseColor("#FFEBEE")
+    private val colorFondoEstadoNeutro = Color.parseColor("#F5F5F5")
 
+    // Crea e inicializa la vista del fragment
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        // Infla el layout principal del fragment
         val view = inflater.inflate(R.layout.fragment_home, container, false)
 
+        // Vinculación de vistas del layout
         tvBienvenida = view.findViewById(R.id.tvBienvenida)
         tvResumenRol = view.findViewById(R.id.tvResumenRol)
         btnVerResumenDiario = view.findViewById(R.id.btnVerResumenDiario)
@@ -130,68 +127,89 @@ class HomeFragment : Fragment() {
         llUltimasIncidencias = view.findViewById(R.id.llUltimasIncidencias)
         llUltimasInspeccionesGlobales = view.findViewById(R.id.llUltimasInspeccionesGlobales)
 
+        // Acción del botón para abrir la actividad de resumen diario
         btnVerResumenDiario.setOnClickListener {
             startActivity(Intent(requireContext(), ResumenInspeccionesDiariasActivity::class.java))
         }
 
+        // Carga el contenido del dashboard
         cargarDashboard()
         return view
     }
 
-    /**
-     * Punto de entrada principal del dashboard.
-     * Realiza todas las consultas a Supabase y delega el pintado
-     * a cada función especializada (`pintar*`).
-     *
-     * Orden de consultas:
-     * 1. Usuario logueado → determina el scope de datos.
-     * 2. Aeronaves activas → base para el estado por aeronave y los mapas.
-     * 3. Todos los usuarios → mapa para mostrar nombres de declarantes.
-     * 4. Inspecciones e incidencias (filtradas por rol).
-     */
+    // Función principal que obtiene y pinta todos los datos del dashboard
     private fun cargarDashboard() {
         lifecycleScope.launch {
             try {
-                val email = supabase.auth.currentSessionOrNull()?.user?.email.orEmpty()
+                // Obtiene el usuario autenticado actual
+                val usuarioActual = UsuarioRepository.getUsuarioActual()
 
-                val usuarioActual = supabase.postgrest["usuarios"]
-                    .select { filter { eq("email", email) } }
-                    .decodeSingle<Usuario>()
-
+                // Muestra el saludo personalizado
                 tvBienvenida.text = "Hola, ${usuarioActual.nombre} 👋"
 
+                // Comprueba si el usuario tiene acceso global
                 val esGeneral = usuarioActual.rol in rolesGenerales
 
+                // Obtiene las aeronaves activas
                 val aeronavesActivas = supabase.postgrest["aeronaves"]
-                    .select { filter { eq("activa", true) } }
+                    .select {
+                        filter {
+                            eq("activa", true)
+                        }
+                    }
                     .decodeList<Aeronave>()
 
-                val aeronavesMap = aeronavesActivas.associate { it.id to "${it.modelo} - ${it.numeroSerie}" }
+                // Mapa de aeronaveId a texto descriptivo de aeronave
+                val aeronavesMap = aeronavesActivas.associate {
+                    it.id to "${it.modelo} - ${it.numeroSerie}"
+                }
 
-                val usuarios = supabase.postgrest["usuarios"].select().decodeList<Usuario>()
+                // Obtiene todos los usuarios
+                val usuarios = supabase.postgrest["usuarios"]
+                    .select()
+                    .decodeList<Usuario>()
+
+                // Mapa de usuarioId a objeto Usuario
                 val usuariosMap = usuarios.associateBy { it.id }
 
-                // Carga inspecciones e incidencias según scope del rol
+                // Obtiene inspecciones según el rol del usuario
                 val inspecciones = if (esGeneral) {
-                    supabase.postgrest["inspecciones"].select().decodeList<Inspeccion>()
+                    supabase.postgrest["inspecciones"]
+                        .select()
+                        .decodeList<Inspeccion>()
                 } else {
                     supabase.postgrest["inspecciones"]
-                        .select { filter { eq("aeronave_id", usuarioActual.aeronaveId ?: -1) } }
+                        .select {
+                            filter {
+                                eq("aeronave_id", usuarioActual.aeronaveId ?: -1)
+                            }
+                        }
                         .decodeList<Inspeccion>()
                 }
 
+                // Obtiene incidencias según el rol del usuario
                 val incidencias = if (esGeneral) {
-                    supabase.postgrest["incidencias_fod"].select().decodeList<IncidenciaFod>()
+                    supabase.postgrest["incidencias_fod"]
+                        .select()
+                        .decodeList<IncidenciaFod>()
                 } else {
                     supabase.postgrest["incidencias_fod"]
-                        .select { filter { eq("aeronave_id", usuarioActual.aeronaveId ?: -1) } }
+                        .select {
+                            filter {
+                                eq("aeronave_id", usuarioActual.aeronaveId ?: -1)
+                            }
+                        }
                         .decodeList<IncidenciaFod>()
                 }
 
-                // Aeronaves visibles: todas (roles generales) o solo la asignada
-                val aeronavesVisibles = if (esGeneral) aeronavesActivas
-                else aeronavesActivas.filter { it.id == usuarioActual.aeronaveId }
+                // Determina qué aeronaves puede ver el usuario
+                val aeronavesVisibles = if (esGeneral) {
+                    aeronavesActivas
+                } else {
+                    aeronavesActivas.filter { it.id == usuarioActual.aeronaveId }
+                }
 
+                // Pinta cada sección del dashboard
                 pintarResumenRol(usuarioActual, aeronavesVisibles.size, incidencias)
                 pintarKpis(inspecciones, incidencias, aeronavesVisibles.size)
                 pintarEstadoAeronaves(aeronavesVisibles, incidencias, inspecciones)
@@ -199,24 +217,29 @@ class HomeFragment : Fragment() {
                 pintarUltimasInspeccionesGlobales(inspecciones, aeronavesMap)
 
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Error cargando dashboard: ${e.message}", Toast.LENGTH_LONG).show()
+                // Muestra un mensaje si ocurre un error al cargar el panel
+                Toast.makeText(
+                    requireContext(),
+                    "Error cargando dashboard: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
     }
 
-    /**
-     * Muestra un texto descriptivo del panel adaptado al rol del usuario.
-     * Incluye métricas relevantes (aeronaves visibles, incidencias abiertas/en proceso)
-     * donde aplica.
-     */
+    // Muestra un resumen textual adaptado al rol del usuario
     private fun pintarResumenRol(
         usuario: Usuario,
         aeronavesVisibles: Int,
         incidencias: List<IncidenciaFod>
     ) {
+        // Cuenta incidencias abiertas
         val abiertas = incidencias.count { it.estado == "abierta" }
+
+        // Cuenta incidencias en proceso
         val enProceso = incidencias.count { it.estado == "en_proceso" }
 
+        // Construye el mensaje según el rol
         tvResumenRol.text = when (usuario.rol) {
             "administrador" ->
                 "Vista global de administración. Estás viendo $aeronavesVisibles aeronaves activas, con $abiertas incidencias abiertas y $enProceso en proceso."
@@ -232,78 +255,99 @@ class HomeFragment : Fragment() {
                 "Vista operativa. Este panel resume el estado actual de tu aeronave y sus movimientos recientes."
         }
 
-        tvResumenRol.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.darker_gray))
+        // Aplica un color gris oscuro al texto resumen
+        tvResumenRol.setTextColor(
+            ContextCompat.getColor(requireContext(), android.R.color.darker_gray)
+        )
     }
 
-    /**
-     * Actualiza los cuatro indicadores numéricos del dashboard:
-     * - Inspecciones de hoy: inspecciones cuya fecha empieza por la fecha actual.
-     * - Incidencias abiertas.
-     * - Incidencias en proceso.
-     * - Aeronaves visibles (activas dentro del scope del rol).
-     */
+    // Pinta los indicadores KPI del panel
     private fun pintarKpis(
         inspecciones: List<Inspeccion>,
         incidencias: List<IncidenciaFod>,
         aeronavesVisibles: Int
     ) {
+        // Obtiene la fecha actual en formato texto
         val hoy = java.time.LocalDate.now().toString()
+
+        // Muestra el número de inspecciones hechas hoy
         tvKpiInspeccionesHoy.text = inspecciones.count { it.fecha?.startsWith(hoy) == true }.toString()
+
+        // Muestra el número de incidencias abiertas
         tvKpiAbiertas.text = incidencias.count { it.estado == "abierta" }.toString()
+
+        // Muestra el número de incidencias en proceso
         tvKpiEnProceso.text = incidencias.count { it.estado == "en_proceso" }.toString()
+
+        // Muestra el número de aeronaves activas visibles
         tvKpiAeronavesActivas.text = aeronavesVisibles.toString()
     }
 
-    /**
-     * Genera dinámicamente una tarjeta por cada aeronave visible mostrando:
-     * - Nombre del modelo y número de serie.
-     * - Estado actual basado en incidencias activas (🔴 abiertas / 🟡 en proceso / 🟢 OK).
-     * - Actividad de inspecciones del día y si alguna registró FOD.
-     *
-     * El color de fondo de la tarjeta sigue la misma lógica semafórica:
-     * rojo → incidencias abiertas o FOD hoy; amarillo → en proceso; verde → limpio;
-     * neutro → sin actividad hoy.
-     */
+    // Pinta el estado actual de cada aeronave visible
     private fun pintarEstadoAeronaves(
         aeronavesVisibles: List<Aeronave>,
         incidencias: List<IncidenciaFod>,
         inspecciones: List<Inspeccion>
     ) {
+        // Limpia el contenedor antes de volver a rellenarlo
         llEstadoAeronaves.removeAllViews()
 
+        // Si no hay aeronaves visibles, muestra mensaje informativo
         if (aeronavesVisibles.isEmpty()) {
             llEstadoAeronaves.addView(crearLineaDashboard("Sin aeronaves visibles para este usuario."))
             return
         }
 
+        // Fecha de hoy
         val hoy = java.time.LocalDate.now().toString()
 
+        // Recorre cada aeronave para pintar su resumen
         aeronavesVisibles.forEach { aeronave ->
+            // Filtra incidencias de la aeronave
             val incidenciasAeronave = incidencias.filter { it.aeronaveId == aeronave.id }
+
+            // Cuenta incidencias abiertas
             val abiertas = incidenciasAeronave.count { it.estado == "abierta" }
+
+            // Cuenta incidencias en proceso
             val enProceso = incidenciasAeronave.count { it.estado == "en_proceso" }
 
+            // Filtra inspecciones de hoy para esa aeronave
             val inspeccionesHoyAeronave = inspecciones.filter {
                 it.aeronaveId == aeronave.id && it.fecha?.startsWith(hoy) == true
             }
+
+            // Número de inspecciones de hoy
             val inspeccionesHoy = inspeccionesHoyAeronave.size
+
+            // Número de inspecciones de hoy con FOD
             val inspeccionesHoyConFod = inspeccionesHoyAeronave.count { it.conFod }
 
-            // Texto semafórico del estado actual de incidencias
+            // Texto descriptivo del estado de incidencias
             val estadoDescriptivo = when {
-                abiertas > 0 -> if (abiertas == 1) "🔴 Estado actual: tiene 1 incidencia FOD abierta"
-                else "🔴 Estado actual: tiene $abiertas incidencias FOD abiertas"
-                enProceso > 0 -> if (enProceso == 1) "🟡 Estado actual: tiene 1 incidencia FOD en proceso"
-                else "🟡 Estado actual: tiene $enProceso incidencias FOD en proceso"
+                abiertas > 0 -> if (abiertas == 1) {
+                    "🔴 Estado actual: tiene 1 incidencia FOD abierta"
+                } else {
+                    "🔴 Estado actual: tiene $abiertas incidencias FOD abiertas"
+                }
+
+                enProceso > 0 -> if (enProceso == 1) {
+                    "🟡 Estado actual: tiene 1 incidencia FOD en proceso"
+                } else {
+                    "🟡 Estado actual: tiene $enProceso incidencias FOD en proceso"
+                }
+
                 else -> "🟢 Estado actual: sin incidencias activas"
             }
 
+            // Texto con la actividad de inspecciones de hoy
             val actividadHoy = when (inspeccionesHoy) {
                 0 -> "📋 Inspecciones realizadas hoy: ninguna"
                 1 -> "📋 Inspecciones realizadas hoy: 1"
                 else -> "📋 Inspecciones realizadas hoy: $inspeccionesHoy"
             }
 
+            // Texto con el resultado FOD de hoy
             val resultadoHoy = when {
                 inspeccionesHoy == 0 -> "ℹ️ Hoy todavía no hay inspecciones registradas"
                 inspeccionesHoyConFod == 0 -> "✅ Todas las inspecciones de hoy están sin FOD"
@@ -311,63 +355,81 @@ class HomeFragment : Fragment() {
                 else -> "🚨 Hoy se ha detectado FOD en $inspeccionesHoyConFod inspecciones"
             }
 
-            val tarjeta = layoutInflater.inflate(R.layout.item_estado_aeronave_dashboard, llEstadoAeronaves, false)
+            // Infla la tarjeta visual de estado de aeronave
+            val tarjeta = layoutInflater.inflate(
+                R.layout.item_estado_aeronave_dashboard,
+                llEstadoAeronaves,
+                false
+            )
 
-            val cardEstadoAeronave = tarjeta.findViewById<MaterialCardView>(R.id.cardEstadoAeronave)
-            tarjeta.findViewById<TextView>(R.id.tvAeronaveEstado).text = "${aeronave.modelo} - ${aeronave.numeroSerie}"
+            // Obtiene la card principal de la tarjeta
+            val cardEstadoAeronave =
+                tarjeta.findViewById<MaterialCardView>(R.id.cardEstadoAeronave)
+
+            // Rellena los textos de la tarjeta
+            tarjeta.findViewById<TextView>(R.id.tvAeronaveEstado).text =
+                "${aeronave.modelo} - ${aeronave.numeroSerie}"
             tarjeta.findViewById<TextView>(R.id.tvEstadoActualAeronave).text = estadoDescriptivo
             tarjeta.findViewById<TextView>(R.id.tvActividadHoyAeronave).text = actividadHoy
             tarjeta.findViewById<TextView>(R.id.tvResultadoHoyAeronave).text = resultadoHoy
 
-            cardEstadoAeronave.setCardBackgroundColor(when {
-                abiertas > 0 || inspeccionesHoyConFod > 0 -> colorFondoEstadoRojo
-                enProceso > 0 -> colorFondoEstadoAmarillo
-                inspeccionesHoy == 0 -> colorFondoEstadoNeutro
-                else -> colorFondoEstadoVerde
-            })
+            // Cambia el color de fondo según la situación de la aeronave
+            cardEstadoAeronave.setCardBackgroundColor(
+                when {
+                    abiertas > 0 || inspeccionesHoyConFod > 0 -> colorFondoEstadoRojo
+                    enProceso > 0 -> colorFondoEstadoAmarillo
+                    inspeccionesHoy == 0 -> colorFondoEstadoNeutro
+                    else -> colorFondoEstadoVerde
+                }
+            )
 
+            // Añade la tarjeta al contenedor
             llEstadoAeronaves.addView(tarjeta)
         }
     }
 
-    /**
-     * Muestra las últimas 5 incidencias FOD ordenadas de más reciente a más antigua.
-     * Por cada incidencia muestra: aeronave, fecha de detección, duración,
-     * declarante (nombre + número de empleado), estado y zona.
-     */
+    // Pinta las últimas incidencias registradas
     private fun pintarUltimasIncidencias(
         incidencias: List<IncidenciaFod>,
         aeronavesMap: Map<Int, String>,
         usuariosMap: Map<Int, Usuario>
     ) {
+        // Limpia el contenedor
         llUltimasIncidencias.removeAllViews()
 
+        // Ordena por fecha descendente y toma las 5 más recientes
         val ultimas = incidencias.sortedByDescending { it.createdAt ?: "" }.take(5)
 
+        // Si no hay incidencias, muestra mensaje informativo
         if (ultimas.isEmpty()) {
             llUltimasIncidencias.addView(crearLineaDashboard("No hay incidencias recientes."))
             return
         }
 
+        // Recorre cada incidencia para pintar su resumen
         ultimas.forEach { incidencia ->
+            // Obtiene el texto descriptivo de la aeronave
             val aeronaveTexto = incidencia.aeronaveId?.let { aeronavesMap[it] } ?: "Sin aeronave"
+
+            // Obtiene el usuario asociado a la incidencia
             val usuario = incidencia.usuarioId?.let { usuariosMap[it] }
 
-            // Prioriza el número de empleado guardado en la incidencia; si es null,
-            // usa el del perfil del usuario; si tampoco existe, muestra un placeholder
+            // Construye el texto del declarante
             val declarante = if (usuario != null) {
                 "${usuario.nombre} ${usuario.apellidos} · ${incidencia.numeroEmpleado ?: usuario.numeroEmpleado ?: "Sin nº empleado"}"
             } else {
                 "Usuario desconocido · ${incidencia.numeroEmpleado ?: "Sin nº empleado"}"
             }
 
+            // Traduce el estado a un texto más visual
             val estado = when (incidencia.estado) {
-                "abierta"    -> "🔴 Abierta"
+                "abierta" -> "🔴 Abierta"
                 "en_proceso" -> "🟡 En proceso"
-                "cerrada"    -> "🟢 Cerrada"
-                else         -> incidencia.estado ?: "Estado no disponible"
+                "cerrada" -> "🟢 Cerrada"
+                else -> incidencia.estado ?: "Estado no disponible"
             }
 
+            // Construye el texto completo de la incidencia
             val texto = buildString {
                 append("$aeronaveTexto\n")
                 append("Detectada: ${formatearFechaHora(incidencia.createdAt)}\n")
@@ -376,36 +438,30 @@ class HomeFragment : Fragment() {
                 append("$estado · Zona: ${incidencia.zonaAvion ?: "No especificada"}")
             }
 
+            // Añade la línea al contenedor
             llUltimasIncidencias.addView(crearLineaDashboard(texto))
         }
     }
 
-    /**
-     * Agrupa todas las inspecciones por aeronave y día, calcula el estado de
-     * completitud y FOD de cada jornada, y muestra las 5 más recientes.
-     *
-     * Lógica de agrupación:
-     * - Clave: "aeronave_id|YYYY-MM-DD".
-     * - Por cada grupo se determinan las zonas inspeccionadas, las faltantes
-     *   (comparando con zonasObligatorias) y las zonas con FOD.
-     *
-     * Color de tarjeta: rojo si hubo FOD, naranja si faltan zonas, verde si completa y limpia.
-     */
+    // Pinta los resúmenes globales de inspecciones recientes
     private fun pintarUltimasInspeccionesGlobales(
         inspecciones: List<Inspeccion>,
         aeronavesMap: Map<Int, String>
     ) {
+        // Limpia el contenedor
         llUltimasInspeccionesGlobales.removeAllViews()
 
+        // Filtra solo inspecciones que tienen fecha válida
         val inspeccionesConFecha = inspecciones.filter { !it.fecha.isNullOrBlank() }
 
-        // Agrupa por aeronave + día para obtener el estado global de cada jornada
+        // Agrupa por aeronave y por día
         val grupos = inspeccionesConFecha.groupBy { inspeccion ->
             val dia = inspeccion.fecha!!.substring(0, 10)
             val aeronave = inspeccion.aeronaveId ?: -1
             "$aeronave|$dia"
         }
 
+        // Genera un resumen por cada grupo
         val resumenes = grupos.map { (clave, listaGrupo) ->
             val (aeronaveId, fechaDia) = clave.split("|").let { it[0].toInt() to it[1] }
             val zonasInspeccionadasSet = listaGrupo.map { it.zona }.toSet()
@@ -420,73 +476,107 @@ class HomeFragment : Fragment() {
             )
         }.sortedByDescending { it.fechaDia }.take(5)
 
+        // Si no hay resúmenes, muestra mensaje informativo
         if (resumenes.isEmpty()) {
-            llUltimasInspeccionesGlobales.addView(crearLineaDashboard("No hay inspecciones globales recientes."))
+            llUltimasInspeccionesGlobales.addView(
+                crearLineaDashboard("No hay inspecciones globales recientes.")
+            )
             return
         }
 
+        // Recorre cada resumen para mostrarlo en una tarjeta
         resumenes.forEach { resumen ->
+            // Infla la tarjeta visual
             val tarjeta = layoutInflater.inflate(
-                R.layout.item_inspeccion_global_dashboard, llUltimasInspeccionesGlobales, false
+                R.layout.item_inspeccion_global_dashboard,
+                llUltimasInspeccionesGlobales,
+                false
             )
 
-            val cardInspeccionGlobal = tarjeta.findViewById<MaterialCardView>(R.id.cardInspeccionGlobal)
-            tarjeta.findViewById<TextView>(R.id.tvAeronaveGlobal).text = resumen.aeronaveTexto
-            tarjeta.findViewById<TextView>(R.id.tvFechaGlobal).text = formatearSoloFecha(resumen.fechaDia)
+            // Obtiene la card principal
+            val cardInspeccionGlobal =
+                tarjeta.findViewById<MaterialCardView>(R.id.cardInspeccionGlobal)
 
+            // Rellena datos básicos de la tarjeta
+            tarjeta.findViewById<TextView>(R.id.tvAeronaveGlobal).text = resumen.aeronaveTexto
+            tarjeta.findViewById<TextView>(R.id.tvFechaGlobal).text =
+                formatearSoloFecha(resumen.fechaDia)
+
+            // Configura el texto de completitud de la inspección
             val tvCompletitud = tarjeta.findViewById<TextView>(R.id.tvEstadoCompletitudGlobal)
             if (resumen.zonasFaltantes.isEmpty()) {
-                tvCompletitud.text = "✅ Completa (${resumen.zonasInspeccionadas.size}/${zonasObligatorias.size} zonas)"
-                tvCompletitud.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black))
+                tvCompletitud.text =
+                    "✅ Completa (${resumen.zonasInspeccionadas.size}/${zonasObligatorias.size} zonas)"
+                tvCompletitud.setTextColor(
+                    ContextCompat.getColor(requireContext(), android.R.color.black)
+                )
             } else {
-                tvCompletitud.text = "⚠️ Incompleta (${resumen.zonasInspeccionadas.size}/${zonasObligatorias.size} zonas)"
+                tvCompletitud.text =
+                    "⚠️ Incompleta (${resumen.zonasInspeccionadas.size}/${zonasObligatorias.size} zonas)"
                 tvCompletitud.setTextColor(colorNaranjaPendiente)
             }
 
+            // Configura el texto del estado FOD
             val tvFod = tarjeta.findViewById<TextView>(R.id.tvEstadoFodGlobal)
             if (resumen.hayFod) {
                 tvFod.text = "🚨 Se detectó FOD en ${resumen.zonasConFod.size} zona(s)"
-                tvFod.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
+                tvFod.setTextColor(
+                    ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark)
+                )
             } else {
                 tvFod.text = "🟢 Sin FOD declarado en esa inspección global"
-                tvFod.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black))
+                tvFod.setTextColor(
+                    ContextCompat.getColor(requireContext(), android.R.color.black)
+                )
             }
 
-            cardInspeccionGlobal.setCardBackgroundColor(when {
-                resumen.hayFod -> colorFondoRojoSuave
-                resumen.zonasFaltantes.isNotEmpty() -> colorFondoNaranjaSuave
-                else -> colorFondoVerdeSuave
-            })
+            // Cambia el color de fondo según el resultado
+            cardInspeccionGlobal.setCardBackgroundColor(
+                when {
+                    resumen.hayFod -> colorFondoRojoSuave
+                    resumen.zonasFaltantes.isNotEmpty() -> colorFondoNaranjaSuave
+                    else -> colorFondoVerdeSuave
+                }
+            )
 
-            // Secciones opcionales: solo visibles si tienen contenido
-            mostrarSeccionZonas(tarjeta, R.id.tvTituloZonasInspeccionadasGlobal, R.id.llZonasInspeccionadasGlobal,
-                resumen.zonasInspeccionadas) { crearLineaZonaInspeccionada(it) }
+            // Muestra la sección de zonas inspeccionadas
+            mostrarSeccionZonas(
+                tarjeta,
+                R.id.tvTituloZonasInspeccionadasGlobal,
+                R.id.llZonasInspeccionadasGlobal,
+                resumen.zonasInspeccionadas
+            ) { crearLineaZonaInspeccionada(it) }
 
-            mostrarSeccionZonas(tarjeta, R.id.tvTituloZonasFodGlobal, R.id.llZonasFodGlobal,
-                resumen.zonasConFod, configTitulo = { tv ->
-                    tv.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
-                }) { crearLineaZonaConFodRoja(it) }
+            // Muestra la sección de zonas con FOD
+            mostrarSeccionZonas(
+                tarjeta,
+                R.id.tvTituloZonasFodGlobal,
+                R.id.llZonasFodGlobal,
+                resumen.zonasConFod,
+                configTitulo = { tv ->
+                    tv.setTextColor(
+                        ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark)
+                    )
+                }
+            ) { crearLineaZonaConFodRoja(it) }
 
-            mostrarSeccionZonas(tarjeta, R.id.tvTituloPendientesGlobal, R.id.llPendientesGlobal,
-                resumen.zonasFaltantes, configTitulo = { tv ->
+            // Muestra la sección de zonas pendientes
+            mostrarSeccionZonas(
+                tarjeta,
+                R.id.tvTituloPendientesGlobal,
+                R.id.llPendientesGlobal,
+                resumen.zonasFaltantes,
+                configTitulo = { tv ->
                     tv.setTextColor(colorNaranjaPendiente)
-                }) { crearLineaChecklistPendienteNaranja(it) }
+                }
+            ) { crearLineaChecklistPendienteNaranja(it) }
 
+            // Añade la tarjeta al contenedor
             llUltimasInspeccionesGlobales.addView(tarjeta)
         }
     }
 
-    /**
-     * Muestra u oculta una sección de zonas dentro de una tarjeta de inspección global.
-     * Si [zonas] está vacío, oculta tanto el título como el contenedor.
-     *
-     * @param tarjeta        Vista raíz de la tarjeta inflada.
-     * @param idTitulo       ID del TextView del título de la sección.
-     * @param idContenedor   ID del LinearLayout que contendrá las filas de zonas.
-     * @param zonas          Lista de zonas a mostrar.
-     * @param configTitulo   Configuración adicional del TextView del título (color, etc.).
-     * @param crearFila      Función que crea el TextView visual para cada zona.
-     */
+    // Muestra u oculta una sección de zonas dentro de una tarjeta
     private fun mostrarSeccionZonas(
         tarjeta: View,
         idTitulo: Int,
@@ -495,9 +585,13 @@ class HomeFragment : Fragment() {
         configTitulo: ((TextView) -> Unit)? = null,
         crearFila: (String) -> TextView
     ) {
+        // Obtiene el título de la sección
         val tvTitulo = tarjeta.findViewById<TextView>(idTitulo)
+
+        // Obtiene el contenedor de la sección
         val llContenedor = tarjeta.findViewById<LinearLayout>(idContenedor)
 
+        // Si hay elementos, muestra la sección y la rellena
         if (zonas.isNotEmpty()) {
             tvTitulo.visibility = View.VISIBLE
             llContenedor.visibility = View.VISIBLE
@@ -505,12 +599,13 @@ class HomeFragment : Fragment() {
             configTitulo?.invoke(tvTitulo)
             zonas.forEach { llContenedor.addView(crearFila(it)) }
         } else {
+            // Si no hay elementos, oculta la sección
             tvTitulo.visibility = View.GONE
             llContenedor.visibility = View.GONE
         }
     }
 
-    /** Crea un TextView estándar para las líneas de texto del dashboard. */
+    // Crea una línea simple de texto para el dashboard
     private fun crearLineaDashboard(texto: String): TextView {
         return TextView(requireContext()).apply {
             text = texto
@@ -520,7 +615,7 @@ class HomeFragment : Fragment() {
         }
     }
 
-    /** Crea una fila de zona inspeccionada (☑ texto, color negro). */
+    // Crea una línea para una zona inspeccionada
     private fun crearLineaZonaInspeccionada(zona: String): TextView {
         return TextView(requireContext()).apply {
             text = "☑ $zona"
@@ -531,7 +626,7 @@ class HomeFragment : Fragment() {
         }
     }
 
-    /** Crea una fila de zona pendiente de inspección (☐ texto, color naranja). */
+    // Crea una línea para una zona pendiente en color naranja
     private fun crearLineaChecklistPendienteNaranja(zona: String): TextView {
         return TextView(requireContext()).apply {
             text = "☐ $zona"
@@ -542,83 +637,93 @@ class HomeFragment : Fragment() {
         }
     }
 
-    /** Crea una fila de zona con FOD detectado (🚨 texto, color rojo). */
+    // Crea una línea para una zona con FOD en color rojo
     private fun crearLineaZonaConFodRoja(zona: String): TextView {
         return TextView(requireContext()).apply {
             text = "🚨 $zona"
             textSize = 13f
             setPadding(12, 2, 0, 2)
             setLineSpacing(0f, 1.1f)
-            setTextColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
+            setTextColor(
+                ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark)
+            )
         }
     }
 
-    /**
-     * Parsea una fecha ISO 8601 a [LocalDateTime].
-     * Intenta primero con offset ([OffsetDateTime]) y luego sin él ([LocalDateTime]).
-     * Devuelve null si la cadena es nula, vacía o tiene un formato no reconocido.
-     */
+    // Intenta convertir una fecha en formato ISO a LocalDateTime
     private fun parseFecha(fechaIso: String?): LocalDateTime? {
         return try {
             if (fechaIso.isNullOrBlank()) return null
             OffsetDateTime.parse(fechaIso).toLocalDateTime()
         } catch (e: Exception) {
-            try { LocalDateTime.parse(fechaIso) } catch (_: Exception) { null }
+            try {
+                LocalDateTime.parse(fechaIso)
+            } catch (_: Exception) {
+                null
+            }
         }
     }
 
-    /**
-     * Calcula y formatea la duración de una incidencia como texto legible.
-     * - Si está cerrada: "✅ Estuvo abierta N día(s)".
-     * - Si está abierta/en proceso: "⏳ Abierta desde hace N día(s)".
-     * - Si no se puede calcular: "Duración: no disponible".
-     *
-     * La duración se calcula entre [createdAt] y [fechaCierre] (si cerrada)
-     * o entre [createdAt] y ahora (si sigue abierta).
-     */
+    // Calcula la duración de una incidencia para mostrarla en el dashboard
     private fun calcularDuracionDashboard(
         estado: String?,
         createdAt: String?,
         fechaCierre: String?
     ): String {
+        // Obtiene la fecha de inicio
         val inicio = parseFecha(createdAt) ?: return "Duración: no disponible"
+
+        // Obtiene la fecha final, usando la fecha de cierre o el momento actual
         val fin = if (estado == "cerrada" && !fechaCierre.isNullOrBlank()) {
             parseFecha(fechaCierre)
         } else {
             OffsetDateTime.now().toLocalDateTime()
         } ?: return "Duración: no disponible"
 
+        // Calcula la duración en días
         val dias = Duration.between(inicio, fin).toDays().coerceAtLeast(0)
 
+        // Devuelve un texto distinto según el estado
         return when (estado) {
-            "cerrada" -> if (dias == 1L) "✅ Estuvo abierta 1 día" else "✅ Estuvo abierta $dias días"
-            "abierta", "en_proceso" -> if (dias == 1L) "⏳ Abierta desde hace 1 día" else "⏳ Abierta desde hace $dias días"
-            else -> if (dias == 1L) "Duración: 1 día" else "Duración: $dias días"
+            "cerrada" -> if (dias == 1L) {
+                "✅ Estuvo abierta 1 día"
+            } else {
+                "✅ Estuvo abierta $dias días"
+            }
+
+            "abierta", "en_proceso" -> if (dias == 1L) {
+                "⏳ Abierta desde hace 1 día"
+            } else {
+                "⏳ Abierta desde hace $dias días"
+            }
+
+            else -> if (dias == 1L) {
+                "Duración: 1 día"
+            } else {
+                "Duración: $dias días"
+            }
         }
     }
 
-    /**
-     * Formatea una fecha ISO 8601 al patrón "dd/MM/yyyy HH:mm".
-     * Devuelve "No disponible" si la cadena es nula o tiene formato no reconocido.
-     */
+    // Formatea una fecha ISO a formato dd/MM/yyyy HH:mm
     private fun formatearFechaHora(fechaIso: String?): String {
         return try {
-            parseFecha(fechaIso)?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) ?: "No disponible"
+            parseFecha(fechaIso)?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+                ?: "No disponible"
         } catch (e: Exception) {
             fechaIso ?: "No disponible"
         }
     }
 
-    /**
-     * Convierte una fecha en formato "YYYY-MM-DD" al patrón "dd/MM/yyyy".
-     * Devuelve "Sin fecha" si la cadena es nula o no se puede parsear.
-     */
+    // Formatea una fecha yyyy-MM-dd a dd/MM/yyyy
     private fun formatearSoloFecha(fechaIso: String?): String {
         return fechaIso?.let {
             try {
                 val (anio, mes, dia) = it.split("-")
                 "$dia/$mes/$anio"
-            } catch (e: Exception) { it }
+            } catch (e: Exception) {
+                it
+            }
         } ?: "Sin fecha"
     }
 }

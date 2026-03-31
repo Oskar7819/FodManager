@@ -90,12 +90,17 @@ dependencies {
 
     // ── Supabase SDK ──────────────────────────────────────────────────────────
     // Versión 2.6.1 con Ktor 2.3.12 (v3.0.2 causó errores de resolución de dependencias)
+    implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.postgrest)  // Consultas SQL: SELECT, INSERT, UPDATE, DELETE
     implementation(libs.supabase.auth)       // Autenticación: signInWith, signUpWith, gestión de sesiones
     implementation(libs.supabase.storage)    // Almacenamiento de imágenes FOD en el bucket "fod-images"
 
+
+
     // Cliente HTTP de Ktor para Android, requerido por el SDK de Supabase
     implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.utils)
 
     // ── Serialización ─────────────────────────────────────────────────────────
     // Necesario para las clases @Serializable usadas en las peticiones a Supabase

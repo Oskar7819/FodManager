@@ -5,98 +5,78 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.example.fodmanager.R
-import com.example.fodmanager.data.remote.supabase
+import com.example.fodmanager.data.repository.UsuarioRepository
 import com.example.fodmanager.ui.fragments.AeronaveFragment
 import com.example.fodmanager.ui.fragments.HomeFragment
 import com.example.fodmanager.ui.fragments.IncidenciasFragment
 import com.example.fodmanager.ui.fragments.InspeccionesFragment
 import com.example.fodmanager.ui.fragments.UsuariosFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
 
-/**
- * Proyección mínima para verificar el rol del usuario sin deserializar el objeto completo.
- * Se usa solo en HomeActivity para decidir si mostrar la pestaña de Usuarios.
- */
-@Serializable
-data class UsuarioRolHome(val rol: String)
-
-/**
- * Activity principal de la aplicación tras el login.
- *
- * Contiene el Bottom Navigation con cinco pestañas y gestiona la
- * navegación entre fragments mediante reemplazos en el contenedor `fragmentContainer`.
- *
- * Pestañas disponibles:
- * - Home (Dashboard) → HomeFragment
- * - Inspecciones     → InspeccionesFragment
- * - Incidencias      → IncidenciasFragment
- * - Aeronaves        → AeronaveFragment
- * - Usuarios         → UsuariosFragment *(visible solo para rolesConUsuarios)*
- *
- * La pestaña "Usuarios" está oculta por defecto en el XML (`android:visible="false"`)
- * y se hace visible dinámicamente si el rol del usuario tiene permiso.
- * Si la consulta de rol falla, la pestaña permanece oculta por seguridad.
- */
+// Activity principal que contiene la navegación inferior y los fragmentos de la app
 class HomeActivity : AppCompatActivity() {
 
-    /** Roles que pueden ver y gestionar la sección de usuarios. */
+    // Roles que pueden ver la pestaña de usuarios
     private val rolesConUsuarios = listOf("administrador", "mando_gp4", "focal_point_fod")
 
+    // Método que se ejecuta al crear la activity
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Establece el layout principal de la activity
         setContentView(R.layout.activity_home)
 
+        // Obtiene la referencia al menú de navegación inferior
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigationView)
 
-        // Carga el Dashboard como pantalla de inicio al entrar en la app
+        // Fragment por defecto
         loadFragment(HomeFragment())
 
-        // Gestiona la selección de pestañas del Bottom Navigation
+        // Gestiona la navegación entre fragmentos al pulsar cada opción del menú
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_home        -> loadFragment(HomeFragment())
+                // Carga el fragmento de inicio
+                R.id.nav_home -> loadFragment(HomeFragment())
+
+                // Carga el fragmento de inspecciones
                 R.id.nav_inspecciones -> loadFragment(InspeccionesFragment())
-                R.id.nav_incidencias  -> loadFragment(IncidenciasFragment())
-                R.id.nav_aeronaves   -> loadFragment(AeronaveFragment())
-                R.id.nav_usuarios    -> loadFragment(UsuariosFragment())
+
+                // Carga el fragmento de incidencias
+                R.id.nav_incidencias -> loadFragment(IncidenciasFragment())
+
+                // Carga el fragmento de aeronaves
+                R.id.nav_aeronaves -> loadFragment(AeronaveFragment())
+
+                // Carga el fragmento de usuarios
+                R.id.nav_usuarios -> loadFragment(UsuariosFragment())
             }
             true
         }
 
+        // Comprueba si el usuario tiene permiso para ver la pestaña de usuarios
         verificarRol(bottomNav)
     }
 
-    /**
-     * Consulta el rol del usuario logueado y hace visible la pestaña Usuarios
-     * si el rol pertenece a rolesConUsuarios.
-     * Cualquier error en la consulta mantiene la pestaña oculta.
-     */
+    // Función que verifica el rol del usuario para mostrar u ocultar la pestaña de usuarios
     private fun verificarRol(bottomNav: BottomNavigationView) {
         lifecycleScope.launch {
             try {
-                val email = supabase.auth.currentSessionOrNull()?.user?.email
-                val usuario = supabase.postgrest["usuarios"]
-                    .select { filter { eq("email", email ?: "") } }
-                    .decodeSingle<UsuarioRolHome>()
+                // Obtiene el usuario actual desde el repositorio
+                val usuario = UsuarioRepository.getUsuarioActual()
 
+                // Si el rol del usuario tiene permisos, muestra la pestaña de usuarios
                 if (usuario.rol in rolesConUsuarios) {
                     bottomNav.menu.findItem(R.id.nav_usuarios).isVisible = true
                 }
-            } catch (e: Exception) {
-                // Fallo silencioso: la pestaña permanece oculta por seguridad
+            } catch (_: Exception) {
+                // Por seguridad, si falla la carga del usuario,
+                // no mostramos la pestaña de usuarios
             }
         }
     }
 
-    /**
-     * Reemplaza el fragment activo en fragmentContainer con fragment.
-     * Usar `replace` en lugar de `add` garantiza que solo haya un fragment activo
-     * en cada momento.
-     */
+    // Función que reemplaza el fragmento actual por otro nuevo
     private fun loadFragment(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragmentContainer, fragment)

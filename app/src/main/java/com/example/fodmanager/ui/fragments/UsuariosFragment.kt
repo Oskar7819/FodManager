@@ -12,164 +12,197 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.fodmanager.ui.usuarios.EditarUsuarioActivity
-import com.example.fodmanager.ui.usuarios.NuevoUsuarioActivity
 import com.example.fodmanager.R
-import com.example.fodmanager.ui.usuarios.UsuarioAdapter
 import com.example.fodmanager.data.models.Aeronave
 import com.example.fodmanager.data.models.Usuario
 import com.example.fodmanager.data.remote.supabase
+import com.example.fodmanager.data.repository.UsuarioRepository
+import com.example.fodmanager.ui.usuarios.EditarUsuarioActivity
+import com.example.fodmanager.ui.usuarios.NuevoUsuarioActivity
+import com.example.fodmanager.ui.usuarios.UsuarioAdapter
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.*
 import kotlinx.coroutines.launch
 
-/**
- * Fragment del tab "Usuarios" del Bottom Navigation.
- *
- * Solo es visible para los roles: `administrador`, `mando_gp4` y `focal_point_fod`.
- * La visibilidad del tab se controla en la activity principal al cargar el rol.
- *
- * Lista de usuarios mostrada según rol:
- * - `administrador`    → todos los usuarios del sistema.
- * - `focal_point_fod`  → solo usuarios con rol `mando_gp4` y `quality`.
- * - `mando_gp4`        → solo operarios adscritos a su misma aeronave.
- * - Cualquier otro rol → lista vacía (no debería llegar a este fragment).
- *
- * Al pulsar una tarjeta se abre EditarUsuarioActivity para modificar los datos
- * del usuario seleccionado.
- */
+// Fragment encargado de mostrar la lista de usuarios
 class UsuariosFragment : Fragment() {
 
+    // RecyclerView donde se mostrará la lista de usuarios
     private lateinit var recyclerView: RecyclerView
+
+    // Adaptador que gestiona cómo se pintan los usuarios en la lista
     private lateinit var adapter: UsuarioAdapter
+
+    // Botón flotante para crear un nuevo usuario
     private lateinit var fab: FloatingActionButton
+
+    // Lista mutable que almacena los usuarios cargados
     private val usuarios = mutableListOf<Usuario>()
 
-    /**
-     * Mapa aeronave_id → "Modelo - NumSerie".
-     * Se construye en cargarDatos y se pasa al adapter para que cada tarjeta
-     * muestre el nombre legible de la aeronave asignada al usuario.
-     */
+    // Mapa que relaciona el id de la aeronave con su texto descriptivo
     private var aeronavesMap = mapOf<Int, String>()
 
-    /**
-     * Launcher para [NuevoUsuarioActivity].
-     * Recarga la lista si el resultado es [Activity.RESULT_OK].
-     */
+    // Lanzador para abrir la pantalla de nuevo usuario y recargar datos al volver
     private val nuevoUsuarioLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        // Si el resultado es correcto, se recargan los datos
         if (result.resultCode == Activity.RESULT_OK) {
             cargarDatos()
         }
     }
 
+    // Crea e inicializa la vista del fragment
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
+        // Infla el layout del fragment
         val view = inflater.inflate(R.layout.fragment_usuarios, container, false)
 
+        // Vincula el RecyclerView del layout
         recyclerView = view.findViewById(R.id.recyclerUsuarios)
+
+        // Vincula el botón flotante del layout
         fab = view.findViewById(R.id.fabNuevoUsuario)
 
-        // El adapter se inicializa con listas vacías; se recrea en cargarDatos()
-        // una vez que el mapa de aeronaves esté disponible
-        adapter = UsuarioAdapter(usuarios, aeronavesMap) { usuario -> abrirEditar(usuario) }
-        recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        recyclerView.adapter = adapter
-
-        fab.setOnClickListener {
-            nuevoUsuarioLauncher.launch(Intent(requireContext(), NuevoUsuarioActivity::class.java))
+        // Inicializa el adaptador con la lista de usuarios y la acción al pulsar uno
+        adapter = UsuarioAdapter(usuarios, aeronavesMap) { usuario ->
+            abrirEditar(usuario)
         }
 
+        // Asigna un layout lineal al RecyclerView
+        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+
+        // Asigna el adaptador al RecyclerView
+        recyclerView.adapter = adapter
+
+        // Acción al pulsar el botón flotante para crear un nuevo usuario
+        fab.setOnClickListener {
+            val intent = Intent(requireContext(), NuevoUsuarioActivity::class.java)
+            nuevoUsuarioLauncher.launch(intent)
+        }
+
+        // Carga los datos iniciales
         cargarDatos()
         return view
     }
 
-    /**
-     * Abre EditarUsuarioActivity con los datos del usuario seleccionado.
-     * Se extrae a función independiente para reutilizarla tanto en el adapter
-     * inicial como en el que se recrea tras recargar datos.
-     */
+    // Abre la pantalla de edición de un usuario enviando sus datos por intent
     private fun abrirEditar(usuario: Usuario) {
         val intent = Intent(requireContext(), EditarUsuarioActivity::class.java)
+
+        // Envía el id del usuario
         intent.putExtra("usuario_id", usuario.id)
+
+        // Envía el nombre completo del usuario
         intent.putExtra("usuario_nombre", "${usuario.nombre} ${usuario.apellidos}")
+
+        // Envía el email del usuario
         intent.putExtra("usuario_email", usuario.email)
+
+        // Envía el rol del usuario
         intent.putExtra("usuario_rol", usuario.rol)
-        // Solo añade aeronave_id si el usuario tiene una aeronave asignada
+
+        // Si tiene aeronave asociada, la envía también
         usuario.aeronaveId?.let { intent.putExtra("usuario_aeronave_id", it) }
+
+        // Abre la actividad de edición
         startActivity(intent)
     }
 
-    /**
-     * Carga los datos desde Supabase en este orden:
-     * 1. Usuario logueado → determina el filtro de la lista.
-     * 2. Todas las aeronaves → construye aeronavesMap.
-     * 3. Usuarios visibles según el rol (ver KDoc de la clase).
-     *
-     * Al final se recrea el adapter con el aeronavesMap actualizado para que
-     * las tarjetas muestren correctamente el nombre de la aeronave de cada usuario.
-     * Esto es necesario porque el adapter almacena el mapa por valor en su constructor.
-     */
+    // Carga los usuarios y aeronaves desde la base de datos
     private fun cargarDatos() {
         lifecycleScope.launch {
             try {
-                val email = supabase.auth.currentSessionOrNull()?.user?.email
+                // Obtiene el usuario autenticado actual
+                val usuarioActual = UsuarioRepository.getUsuarioActual()
 
+                // Busca en la tabla usuarios el registro del usuario logueado
                 val usuarioLogueado = supabase.postgrest["usuarios"]
-                    .select { filter { eq("email", email ?: "") } }
+                    .select {
+                        filter {
+                            eq("email", usuarioActual.email)
+                        }
+                    }
                     .decodeSingle<Usuario>()
 
+                // Obtiene todas las aeronaves
                 val aeronaves = supabase.postgrest["aeronaves"]
                     .select()
                     .decodeList<Aeronave>()
 
-                aeronavesMap = aeronaves.associate { it.id to "${it.modelo} - ${it.numeroSerie}" }
+                // Construye un mapa con el id de la aeronave y su descripción
+                aeronavesMap = aeronaves.associate { aeronave ->
+                    aeronave.id to "${aeronave.modelo} - ${aeronave.numeroSerie}"
+                }
 
+                // Obtiene los usuarios visibles según el rol del usuario logueado
                 val resultado = when (usuarioLogueado.rol) {
                     "administrador" -> {
+                        // El administrador puede ver todos los usuarios
                         supabase.postgrest["usuarios"]
                             .select()
                             .decodeList<Usuario>()
                     }
+
                     "focal_point_fod" -> {
-                        // Puede ver y gestionar mandos y quality para asignarles aeronaves
+                        // El focal point FOD puede ver usuarios con rol mando_gp4 o quality
                         supabase.postgrest["usuarios"]
-                            .select { filter {
-                                or {
-                                    eq("rol", "mando_gp4")
-                                    eq("rol", "quality")
+                            .select {
+                                filter {
+                                    or {
+                                        eq("rol", "mando_gp4")
+                                        eq("rol", "quality")
+                                    }
                                 }
-                            }}
+                            }
                             .decodeList<Usuario>()
                     }
+
                     "mando_gp4" -> {
-                        // Solo ve los operarios de su propia aeronave
+                        // El mando_gp4 puede ver operarios de su misma aeronave
                         supabase.postgrest["usuarios"]
-                            .select { filter {
-                                and {
-                                    eq("rol", "operario")
-                                    eq("aeronave_id", usuarioLogueado.aeronaveId ?: -1)
+                            .select {
+                                filter {
+                                    and {
+                                        eq("rol", "operario")
+                                        eq("aeronave_id", usuarioLogueado.aeronaveId ?: -1)
+                                    }
                                 }
-                            }}
+                            }
                             .decodeList<Usuario>()
                     }
+
+                    // Para cualquier otro rol no se muestran usuarios
                     else -> emptyList()
                 }
 
+                // Limpia la lista actual de usuarios
                 usuarios.clear()
+
+                // Añade los usuarios obtenidos
                 usuarios.addAll(resultado)
 
-                // Se recrea el adapter para que reciba el mapa de aeronaves actualizado
-                adapter = UsuarioAdapter(usuarios, aeronavesMap) { usuario -> abrirEditar(usuario) }
+                // Recrea el adaptador con los nuevos datos
+                adapter = UsuarioAdapter(usuarios, aeronavesMap) { usuario ->
+                    abrirEditar(usuario)
+                }
+
+                // Asigna el nuevo adaptador al RecyclerView
                 recyclerView.adapter = adapter
+
+                // Notifica al adaptador que los datos han cambiado
                 adapter.notifyDataSetChanged()
 
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                // Muestra un mensaje si ocurre algún error
+                Toast.makeText(
+                    requireContext(),
+                    "Error: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
     }

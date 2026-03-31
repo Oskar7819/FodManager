@@ -8,96 +8,101 @@ import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.example.fodmanager.ui.home.HomeActivity
 import com.example.fodmanager.R
-import com.example.fodmanager.data.local.SessionManager
-import com.example.fodmanager.data.remote.supabase
+import com.example.fodmanager.data.repository.AuthRepository
+import com.example.fodmanager.data.repository.UsuarioRepository
+import com.example.fodmanager.ui.home.HomeActivity
 import com.google.android.material.textfield.TextInputEditText
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.providers.builtin.Email
 import kotlinx.coroutines.launch
 
-/**
- * Pantalla de login: es la primera activity que ve el usuario al abrir la aplicación.
- *
- * Responsabilidades:
- * - Recoger las credenciales (email y contraseña) del usuario.
- * - Autenticarlas contra Supabase Auth.
- * - Guardar las credenciales en SessionManager para restaurar la sesión
- *   en caso de que el usuario logueado cree un nuevo usuario (ver SessionManager).
- * - Navegar a[HomeActivity tras un login exitoso y destruirse con finish
- *   para que el usuario no pueda volver a esta pantalla con el botón atrás.
- */
+// Activity principal de acceso a la aplicación
 class MainActivity : AppCompatActivity() {
 
+    // Campo de texto para introducir el email
     private lateinit var etEmail: TextInputEditText
+
+    // Campo de texto para introducir la contraseña
     private lateinit var etPassword: TextInputEditText
+
+    // Botón para iniciar sesión
     private lateinit var btnLogin: Button
+
+    // Barra de progreso mostrada durante el proceso de login
     private lateinit var progressBar: ProgressBar
 
+    // Método que se ejecuta al crear la activity
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Si ya hay sesión, no tiene sentido enseñar login otra vez
+        if (AuthRepository.haySesionActiva()) {
+            // Abre directamente la pantalla principal
+            startActivity(Intent(this, HomeActivity::class.java))
+            finish()
+            return
+        }
+
+        // Asigna el layout de la pantalla de login
         setContentView(R.layout.activity_main)
 
+        // Vincula las vistas con sus elementos del layout
         etEmail = findViewById(R.id.etEmail)
         etPassword = findViewById(R.id.etPassword)
         btnLogin = findViewById(R.id.btnLogin)
         progressBar = findViewById(R.id.progressBar)
 
+        // Acción al pulsar el botón de login
         btnLogin.setOnClickListener {
+            // Obtiene y limpia los valores introducidos
             val email = etEmail.text.toString().trim()
             val password = etPassword.text.toString().trim()
 
-            // Validación básica: ambos campos son obligatorios
+            // Comprueba que ambos campos estén rellenos
             if (email.isEmpty() || password.isEmpty()) {
                 Toast.makeText(this, "Rellena todos los campos", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
+            // Llama a la función que realiza el inicio de sesión
             login(email, password)
         }
     }
 
-    /**
-     * Autentica al usuario contra Supabase Auth usando el proveedor Email.
-     *
-     * Durante el proceso el botón queda deshabilitado y el ProgressBar visible
-     * para evitar envíos duplicados. El bloque `finally` restaura ambos elementos
-     * independientemente del resultado.
-     *
-     * Si las credenciales son correctas:
-     * 1. Se guardan en SessionManager para posibles restauraciones de sesión.
-     * 2. Se navega a HomeActivity y se destruye esta activity.
-     *
-     * Si las credenciales son incorrectas o hay un error de red, se muestra
-     * el mensaje de error al usuario y se reactiva el formulario.
-     */
+    // Función que gestiona el proceso de inicio de sesión
     private fun login(email: String, password: String) {
+        // Muestra la barra de progreso
         progressBar.visibility = View.VISIBLE
+
+        // Desactiva el botón para evitar múltiples pulsaciones
         btnLogin.isEnabled = false
 
         lifecycleScope.launch {
             try {
-                supabase.auth.signInWith(Email) {
-                    this.email = email
-                    this.password = password
-                }
+                // Login real contra Supabase Auth
+                AuthRepository.login(email, password)
 
-                // Las credenciales se guardan por si se necesita restaurar la sesión
-                // tras crear un nuevo usuario (signUpWith cierra la sesión actual)
-                SessionManager.emailActual = email
-                SessionManager.passwordActual = password
+                // Validamos que el perfil exista y esté activo
+                UsuarioRepository.validarAccesoPostLogin()
 
+                // Muestra mensaje de éxito
                 Toast.makeText(this@MainActivity, "Login correcto", Toast.LENGTH_SHORT).show()
 
+                // Abre la pantalla principal de la app
                 startActivity(Intent(this@MainActivity, HomeActivity::class.java))
                 finish()
 
             } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                // Muestra mensaje de error si falla el login
+                Toast.makeText(
+                    this@MainActivity,
+                    "No se pudo iniciar sesión: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
             } finally {
-                // Se ejecuta siempre: restaura el estado de la UI
+                // Oculta la barra de progreso al finalizar
                 progressBar.visibility = View.GONE
+
+                // Vuelve a activar el botón de login
                 btnLogin.isEnabled = true
             }
         }
