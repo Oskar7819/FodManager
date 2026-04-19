@@ -4,7 +4,8 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.os.Build
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.MenuItem
@@ -18,6 +19,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.example.fodmanager.R
@@ -30,6 +32,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.util.UUID
 
 /**
@@ -113,12 +116,10 @@ data class InspeccionOrigenIncidencia(
 /**
  * Pantalla para registrar una nueva incidencia FOD vinculada a una inspección previa.
  *
- * Flujo:
- * 1. Cargar usuario logueado.
- * 2. Cargar inspección origen.
- * 3. Permitir tomar foto.
- * 4. Subir imagen a Supabase Storage.
- * 5. Insertar incidencia en `incidencias_fod`.
+ * Mejora aplicada:
+ * - Ya no se usa el thumbnail de la cámara.
+ * - Ahora se captura la imagen completa con FileProvider.
+ * - La imagen real se sube a Supabase Storage, mejorando la nitidez.
  */
 class NuevaIncidenciaActivity : AppCompatActivity() {
 
@@ -155,8 +156,11 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
     // TextView con la zona del avión
     private lateinit var tvZonaAvion: TextView
 
-    // Bitmap capturado con la cámara
-    private var fotoBitmap: Bitmap? = null
+    // URI segura de la fotografía capturada
+    private var photoUri: Uri? = null
+
+    // Archivo temporal donde se guarda la imagen real
+    private var photoFile: File? = null
 
     // ID de la inspección recibida por Intent
     private var inspeccionId: Int = -1
@@ -169,7 +173,6 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
 
     /**
      * Roles autorizados para registrar incidencias FOD.
-     * `focal_point_fod` y `head_plant` quedan fuera.
      */
     private val rolesQuePuedenRegistrarIncidencia = listOf(
         "operario",
@@ -179,7 +182,6 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
 
     /**
      * Valores internos del enum `tipo_fod`.
-     * Estos son los que realmente se guardan en la base de datos.
      */
     private val tiposFod = listOf(
         "ambiental",
@@ -191,7 +193,7 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
     )
 
     /**
-     * Valores visibles para el Spinner de tipo de FOD.
+     * Valores visibles del tipo de FOD para el Spinner.
      */
     private val tiposFodMostrar = listOf(
         "🌫️ Ambiental (suciedad y polvo)",
@@ -203,12 +205,12 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
     )
 
     /**
-     * Valores internos del campo prioridad.
+     * Valores internos de prioridad.
      */
     private val prioridades = listOf("baja", "alta")
 
     /**
-     * Valores visibles en el Spinner de prioridad.
+     * Valores visibles de prioridad.
      */
     private val prioridadesMostrar = listOf(
         "🟢 Baja",
@@ -216,65 +218,47 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
     )
 
     /**
-     * Launcher de cámara.
+     * Launcher moderno para capturar la foto y guardarla directamente en el URI indicado.
      *
-     * Usa la forma moderna de leer el Bitmap desde extras:
-     * - En Android 13+ usa getParcelable("data", Bitmap::class.java)
-     * - En versiones anteriores usa getParcelable<Bitmap>("data")
-     *
-     * Nota:
-     * `data` aquí devuelve normalmente un thumbnail de la foto,
-     * no la imagen completa en alta resolución.
+     * Si sale bien:
+     * - la cámara escribe la foto real en photoFile
+     * - se muestra la vista previa en imgPreview
      */
-    private val camaraLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        // Si la captura fue correcta, intentamos obtener el bitmap
-        if (result.resultCode == RESULT_OK) {
-            val bitmap = result.data?.extras?.let { extras ->
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    // Forma moderna para Android 13 o superior
-                    extras.getParcelable("data", Bitmap::class.java)
-                } else {
-                    // Forma antigua para versiones anteriores
-                    @Suppress("DEPRECATION")
-                    extras.getParcelable<Bitmap>("data")
-                }
-            }
+    private val takePictureLauncher = registerForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && photoUri != null && photoFile?.exists() == true) {
+            imgPreview.setImageURI(null)
+            imgPreview.setImageURI(photoUri)
+            imgPreview.isVisible = true
+        } else {
+            photoUri = null
+            photoFile = null
 
-            // Si el bitmap existe, se guarda y se muestra en pantalla
-            if (bitmap != null) {
-                fotoBitmap = bitmap
-                imgPreview.setImageBitmap(bitmap)
-                imgPreview.isVisible = true
-            } else {
-                // Si no se pudo recuperar la imagen, se informa al usuario
-                Toast.makeText(
-                    this,
-                    "No se pudo obtener la imagen de la cámara",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+            Toast.makeText(
+                this,
+                "No se pudo obtener la imagen de la cámara",
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
     /**
-     * Launcher para pedir permiso de cámara.
+     * Launcher para pedir el permiso de cámara.
      */
     private val permisoCamaraLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { concedido ->
-        // Si el usuario concede permiso, se abre la cámara
         if (concedido) {
             abrirCamara()
         } else {
-            // Si no lo concede, se muestra mensaje informativo
             Toast.makeText(this, "Permiso de cámara denegado", Toast.LENGTH_SHORT).show()
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         // Asigna el layout de la activity
         setContentView(R.layout.activity_nueva_incidencia)
 
@@ -296,7 +280,7 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
         tvDeclaranteNumeroEmpleado = findViewById(R.id.tvDeclaranteNumeroEmpleado)
         tvZonaAvion = findViewById(R.id.tvZonaAvion)
 
-        // Spinner de prioridad
+        // Adaptador del spinner de prioridad
         val adapterPrioridad = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
@@ -305,7 +289,7 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
         adapterPrioridad.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerPrioridad.adapter = adapterPrioridad
 
-        // Spinner de tipo FOD
+        // Adaptador del spinner de tipo de FOD
         val adapterTipo = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
@@ -314,14 +298,32 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
         adapterTipo.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerTipoFod.adapter = adapterTipo
 
-        // Recuperar inspección origen desde el Intent
+        // Recupera la inspección origen desde el Intent
         inspeccionId = intent.getIntExtra("inspeccion_id", -1)
 
-        // Si no llega una inspección válida, se cierra la pantalla
+        // Si la inspección no es válida, se cierra la pantalla
         if (inspeccionId == -1) {
             Toast.makeText(this, "Error: inspección no válida", Toast.LENGTH_SHORT).show()
             finish()
             return
+        }
+
+        // Restaurar foto temporal si la activity se recrea
+        val savedPath = savedInstanceState?.getString("photo_file_path")
+        if (!savedPath.isNullOrBlank()) {
+            val restoredFile = File(savedPath)
+
+            if (restoredFile.exists()) {
+                photoFile = restoredFile
+                photoUri = FileProvider.getUriForFile(
+                    this,
+                    "${packageName}.provider",
+                    restoredFile
+                )
+
+                imgPreview.setImageURI(photoUri)
+                imgPreview.isVisible = true
+            }
         }
 
         // Carga inicial de datos
@@ -334,16 +336,21 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
     }
 
     /**
-     * Carga el usuario logueado desde la tabla `usuarios`,
-     * usando el email de la sesión actual de Supabase Auth.
+     * Guarda la ruta del archivo temporal para restaurarlo tras una recreación.
+     */
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString("photo_file_path", photoFile?.absolutePath)
+    }
+
+    /**
+     * Carga el usuario logueado desde Supabase usando el email de la sesión.
      */
     private fun cargarUsuarioLogueado() {
         lifecycleScope.launch {
             try {
-                // Obtiene el email del usuario autenticado
                 val email = supabase.auth.currentSessionOrNull()?.user?.email.orEmpty()
 
-                // Si no hay email, no hay sesión válida
                 if (email.isBlank()) {
                     Toast.makeText(
                         this@NuevaIncidenciaActivity,
@@ -354,24 +361,32 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
                     return@launch
                 }
 
-                // Busca el usuario en la tabla usuarios por su email
                 val usuario = supabase.postgrest["usuarios"]
                     .select {
                         filter {
                             eq("email", email)
                         }
                     }
-                    .decodeSingle<UsuarioIncidenciaActual>()
+                    .decodeList<UsuarioIncidenciaActual>()
+                    .firstOrNull()
+
+                if (usuario == null) {
+                    Toast.makeText(
+                        this@NuevaIncidenciaActivity,
+                        "No se encontró el usuario logueado",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    finish()
+                    return@launch
+                }
 
                 usuarioLogueado = usuario
 
-                // Pintar datos del usuario en pantalla
                 tvDeclaranteNombre.text = "Nombre: ${usuario.nombre}"
                 tvDeclaranteApellidos.text = "Apellidos: ${usuario.apellidos}"
                 tvDeclaranteNumeroEmpleado.text =
                     "Nº empleado: ${usuario.numeroEmpleado ?: "No especificado"}"
 
-                // Verificación de rol
                 if (usuario.rol !in rolesQuePuedenRegistrarIncidencia) {
                     Toast.makeText(
                         this@NuevaIncidenciaActivity,
@@ -382,7 +397,6 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
                 }
 
             } catch (e: Exception) {
-                // Muestra error si no se puede cargar el usuario
                 Toast.makeText(
                     this@NuevaIncidenciaActivity,
                     "Error cargando declarante: ${e.message}",
@@ -394,26 +408,32 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
 
     /**
      * Carga la inspección origen desde la tabla `inspecciones`.
-     * Muestra la zona y bloquea el guardado si esa inspección no tiene FOD.
      */
     private fun cargarInspeccionOrigen() {
         lifecycleScope.launch {
             try {
-                // Busca la inspección origen por su id
                 val inspeccion = supabase.postgrest["inspecciones"]
                     .select {
                         filter {
                             eq("id", inspeccionId)
                         }
                     }
-                    .decodeSingle<InspeccionOrigenIncidencia>()
+                    .decodeList<InspeccionOrigenIncidencia>()
+                    .firstOrNull()
+
+                if (inspeccion == null) {
+                    Toast.makeText(
+                        this@NuevaIncidenciaActivity,
+                        "No se encontró la inspección",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    finish()
+                    return@launch
+                }
 
                 inspeccionOrigen = inspeccion
-
-                // Mostrar zona en la interfaz
                 tvZonaAvion.text = "Zona: ${inspeccion.zona}"
 
-                // Si la inspección no tiene FOD, no se puede crear incidencia
                 if (!inspeccion.conFod) {
                     btnGuardar.isEnabled = false
                     Toast.makeText(
@@ -424,7 +444,6 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
                 }
 
             } catch (e: Exception) {
-                // Muestra error si no se puede cargar la inspección
                 Toast.makeText(
                     this@NuevaIncidenciaActivity,
                     "Error cargando inspección: ${e.message}",
@@ -435,11 +454,10 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
     }
 
     /**
-     * Comprueba si ya existe permiso de cámara.
+     * Comprueba si existe permiso de cámara.
      * Si no existe, lo solicita.
      */
     private fun verificarPermisoCamara() {
-        // Comprueba si el permiso de cámara ya está concedido
         if (ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.CAMERA
@@ -447,19 +465,49 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
         ) {
             abrirCamara()
         } else {
-            // Si no está concedido, lo solicita al usuario
             permisoCamaraLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
     /**
-     * Lanza la app de cámara del dispositivo.
-     *
-     * Este enfoque devuelve normalmente una miniatura en extras["data"].
+     * Abre la cámara y prepara el archivo temporal donde se guardará la foto real.
      */
     private fun abrirCamara() {
-        // Lanza el intent de captura de imagen
-        camaraLauncher.launch(Intent(MediaStore.ACTION_IMAGE_CAPTURE))
+        val intentCamara = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+
+        if (intentCamara.resolveActivity(packageManager) == null) {
+            Toast.makeText(this, "No hay aplicación de cámara disponible", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        try {
+            val archivo = crearArchivoImagen()
+            val uri = FileProvider.getUriForFile(
+                this,
+                "${packageName}.provider",
+                archivo
+            )
+
+            photoFile = archivo
+            photoUri = uri
+
+            takePictureLauncher.launch(uri)
+
+        } catch (e: Exception) {
+            Toast.makeText(
+                this,
+                "No se pudo preparar la cámara: ${e.message}",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    /**
+     * Crea un archivo temporal JPG dentro de cacheDir.
+     */
+    private fun crearArchivoImagen(): File {
+        val nombreArchivo = "FOD_${System.currentTimeMillis()}_${UUID.randomUUID()}"
+        return File.createTempFile(nombreArchivo, ".jpg", cacheDir)
     }
 
     /**
@@ -467,79 +515,89 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
      *
      * Pasos:
      * 1. Validar usuario, inspección, descripción y foto.
-     * 2. Comprimir imagen.
+     * 2. Leer el archivo real.
      * 3. Subir imagen al bucket `fod-images`.
      * 4. Obtener URL pública.
      * 5. Insertar registro en `incidencias_fod`.
      */
     private fun guardarIncidencia() {
-        // Recupera el usuario cargado o muestra error
         val usuario = usuarioLogueado ?: run {
             Toast.makeText(this, "No se ha podido cargar el usuario logueado", Toast.LENGTH_SHORT)
                 .show()
             return
         }
 
-        // Recupera la inspección cargada o muestra error
         val inspeccion = inspeccionOrigen ?: run {
             Toast.makeText(this, "No se ha podido cargar la inspección origen", Toast.LENGTH_SHORT)
                 .show()
             return
         }
 
-        // Doble comprobación defensiva de rol
         if (usuario.rol !in rolesQuePuedenRegistrarIncidencia) {
             Toast.makeText(this, "Tu rol no puede registrar incidencias FOD.", Toast.LENGTH_SHORT)
                 .show()
             return
         }
 
-        // La inspección debe estar marcada con FOD
         if (!inspeccion.conFod) {
             Toast.makeText(this, "La inspección origen no tiene FOD", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Recoger datos del formulario
         val descripcion = etDescripcion.text?.toString()?.trim().orEmpty()
         val tipoFod = tiposFod[spinnerTipoFod.selectedItemPosition]
         val prioridad = prioridades[spinnerPrioridad.selectedItemPosition]
 
-        // Validación de descripción
         if (descripcion.isBlank()) {
             etDescripcion.error = "La descripción es obligatoria"
             return
         }
 
-        // La foto es obligatoria
-        if (fotoBitmap == null) {
+        val archivoImagen = photoFile
+        if (archivoImagen == null || !archivoImagen.exists()) {
             Toast.makeText(this, "La foto es obligatoria", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Bloquear botón y mostrar progreso
         btnGuardar.isEnabled = false
         progressBar.isVisible = true
 
         lifecycleScope.launch {
             try {
-                // 1) Comprimir imagen a JPEG con calidad 80
-                val stream = ByteArrayOutputStream()
-                fotoBitmap!!.compress(Bitmap.CompressFormat.JPEG, 80, stream)
-
-                // 2) Nombre único del archivo
+                // Nombre único del archivo en Storage
                 val nombreArchivo = "fod_${UUID.randomUUID()}.jpg"
 
-                // 3) Subir al bucket de Storage
-                supabase.storage["fod-images"].upload(
-                    nombreArchivo,
-                    stream.toByteArray()
+                // Leer bytes de la foto real
+                val bitmap = BitmapFactory.decodeFile(archivoImagen.absolutePath)
+
+// Escalar imagen (máx 1280px)
+                val maxSize = 1280
+                val ratio = minOf(
+                    maxSize.toFloat() / bitmap.width,
+                    maxSize.toFloat() / bitmap.height
                 )
 
-                // 4) Obtener URL pública
+                val newWidth = (bitmap.width * ratio).toInt()
+                val newHeight = (bitmap.height * ratio).toInt()
+
+                val resizedBitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+
+// Comprimir JPEG
+                val stream = ByteArrayOutputStream()
+                resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 80, stream)
+
+                val bytesImagen = stream.toByteArray()
+
+                // Subir al bucket de Storage
+                supabase.storage["fod-images"].upload(
+                    nombreArchivo,
+                    bytesImagen
+                )
+
+                // Obtener URL pública
                 val imagenUrl = supabase.storage["fod-images"].publicUrl(nombreArchivo)
 
-                // 5) Insertar incidencia en la tabla
+                // Insertar incidencia
                 supabase.postgrest["incidencias_fod"].insert(
                     InsertIncidenciaFodPayload(
                         inspeccionId = inspeccion.id,
@@ -554,26 +612,25 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
                     )
                 )
 
-                // Muestra mensaje de éxito
                 Toast.makeText(
                     this@NuevaIncidenciaActivity,
                     "Incidencia guardada",
                     Toast.LENGTH_SHORT
                 ).show()
 
-                // Devuelve resultado correcto y cierra la activity
+                // Borra el archivo temporal local tras subirlo
+                archivoImagen.delete()
+
                 setResult(RESULT_OK)
                 finish()
 
             } catch (e: Exception) {
-                // Muestra mensaje de error si falla el guardado
                 Toast.makeText(
                     this@NuevaIncidenciaActivity,
                     "Error: ${e.message}",
                     Toast.LENGTH_LONG
                 ).show()
 
-                // Reactiva el botón y oculta el progreso para permitir reintento
                 btnGuardar.isEnabled = true
                 progressBar.isVisible = false
             }
@@ -585,7 +642,6 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
      */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return if (item.itemId == android.R.id.home) {
-            // Cierra la pantalla al pulsar atrás en la barra superior
             finish()
             true
         } else {

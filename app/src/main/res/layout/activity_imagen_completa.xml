@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <!--
+        Imagen a pantalla completa con soporte de zoom.
+
+        PhotoView permite:
+        - zoom con dos dedos (pinch zoom)
+        - desplazamiento de la imagen
+        - doble toque para ampliar/reducir
+
+        scaleType fitCenter:
+        - muestra la imagen completa sin recortes
+    -->
+    <io.getstream.photoview.PhotoView
+        android:id="@+id/photoViewImagenCompleta"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="Imagen completa de la incidencia"
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter" />
+
+    <!--
+        Botón de cerrar (X)
+        Posicionado arriba a la derecha
+        Estilo simple para no molestar la visualización
+    -->
+    <ImageView
+        android:id="@+id/btnCerrarImagen"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_margin="16dp"
+        android:layout_gravity="top|end"
+        android:padding="8dp"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:tint="@android:color/white"
+        android:background="@android:color/transparent"
+        android:contentDescription="Cerrar imagen" />
+
+</FrameLayout>

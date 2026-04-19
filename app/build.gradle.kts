@@ -115,4 +115,9 @@ dependencies {
     // Imprescindible para java.time.* (LocalDateTime, OffsetDateTime, Duration)
     // que se usan extensamente en el cálculo de fechas y duraciones de incidencias
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+
+    dependencies {
+        // Librería PhotoView para permitir zoom con dedos sobre imágenes
+        implementation("io.getstream:photoview:1.0.0")
+    }
 }

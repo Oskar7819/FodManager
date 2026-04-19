@@ -1,199 +1,269 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Layout de NuevaIncidenciaActivity.
-    ScrollView para accesibilidad en pantallas pequeñas con el teclado visible.
-    El formulario se divide en secciones: declarante (solo lectura),
-    descripción, tipo de FOD, zona (heredada de la inspección) y foto obligatoria.
+
+    Se usa un ScrollView para asegurar la accesibilidad del formulario
+    en pantallas pequeñas y cuando el teclado está visible.
+
+    La pantalla se organiza en bloques visuales:
+    - Datos del declarante
+    - Información de la incidencia
+    - Evidencia fotográfica
+
+    Se mantienen los mismos IDs del proyecto para no afectar al código Kotlin.
 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
+    android:clipToPadding="false"
+    android:paddingStart="16dp"
+    android:paddingTop="16dp"
+    android:paddingEnd="16dp"
     android:paddingBottom="24dp">
 
-    <LinearLayout
+    <!--
+        Tarjeta principal del formulario.
+        Se usa MaterialCardView para dar una apariencia más moderna,
+        coherente con la pantalla de detalle de incidencia.
+    -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingBottom="8dp">
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="#DADADA">
 
-        <!-- Título del formulario -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Nueva Incidencia FOD"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="24dp" />
-
-        <!-- Cabecera de la sección del declarante -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Declarante"
-            android:textStyle="bold"
-            android:textSize="16sp"
-            android:layout_marginBottom="4dp" />
-
-        <!-- Nombre del usuario logueado (solo lectura, cargado automáticamente) -->
-        <TextView
-            android:id="@+id/tvDeclaranteNombre"
+        <!-- Contenedor vertical principal -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Nombre: -"
-            android:textSize="14sp"
-            android:layout_marginBottom="4dp" />
+            android:orientation="vertical"
+            android:padding="16dp">
 
-        <!-- Apellidos del declarante (solo lectura) -->
-        <TextView
-            android:id="@+id/tvDeclaranteApellidos"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Apellidos: -"
-            android:textSize="14sp"
-            android:layout_marginBottom="4dp" />
+            <!-- Título principal de la pantalla -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nueva Incidencia FOD"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="20dp" />
 
-        <!-- Número de empleado del declarante (solo lectura) -->
-        <TextView
-            android:id="@+id/tvDeclaranteNumeroEmpleado"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Nº empleado: -"
-            android:textSize="14sp"
-            android:layout_marginBottom="16dp" />
+            <!-- ========================= -->
+            <!-- BLOQUE: DECLARANTE -->
+            <!-- ========================= -->
 
-        <!--
-            Campo de texto multilinea para describir el hallazgo FOD.
-            minLines=3 garantiza una altura mínima cómoda para escribir.
-            Campo obligatorio: NuevaIncidenciaActivity valida que no esté vacío.
-        -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Descripción del FOD"
-            android:layout_marginBottom="16dp">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etDescripcion"
+            <!-- Cabecera de la sección de datos del declarante -->
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textMultiLine"
-                android:minLines="3" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:text="Declarante"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
 
-        <!-- Etiqueta del Spinner de tipo de FOD -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Tipo de FOD"
-            android:textStyle="bold"
-            android:textSize="14sp"
-            android:layout_marginBottom="4dp" />
+            <!-- Nombre del usuario logueado -->
+            <TextView
+                android:id="@+id/tvDeclaranteNombre"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Nombre: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="4dp" />
 
+            <!-- Apellidos del usuario logueado -->
+            <TextView
+                android:id="@+id/tvDeclaranteApellidos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Apellidos: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="4dp" />
 
+            <!-- Número de empleado del usuario logueado -->
+            <TextView
+                android:id="@+id/tvDeclaranteNumeroEmpleado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Nº empleado: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="20dp" />
 
-        <!--
-            Spinner con las categorías del ENUM tipo_fod.
-            NuevaIncidenciaActivity lo rellena con textos legibles (tiposFodMostrar)
-            pero al guardar usa el código interno (tiposFod) según el índice seleccionado.
-        -->
-        <Spinner
-            android:id="@+id/spinnerTipoFod"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp" />
+            <!-- ========================= -->
+            <!-- BLOQUE: INFORMACIÓN FOD -->
+            <!-- ========================= -->
 
-        <!-- Etiqueta de la zona (heredada de la inspección, no editable) -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Zona del avión"
-            android:textStyle="bold"
-            android:textSize="14sp"
-            android:layout_marginBottom="4dp" />
+            <!-- Cabecera del bloque de información de la incidencia -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Información de la incidencia"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
 
-        <!--
-            Zona donde se encontró el FOD. Solo lectura: se hereda automáticamente
-            de la inspección origen y el usuario no puede modificarla.
-            Usa @android:drawable/editbox_background para parecer un campo de texto.
-        -->
-        <TextView
-            android:id="@+id/tvZonaAvion"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Zona: -"
-            android:textSize="14sp"
-            android:padding="12dp"
-            android:background="@android:drawable/editbox_background"
-            android:layout_marginBottom="16dp" />
+            <!--
+                Campo de descripción del hallazgo FOD.
+                Es obligatorio y se valida desde NuevaIncidenciaActivity.
+                minLines=3 asegura una altura cómoda para escribir.
+            -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Descripción del FOD"
+                android:layout_marginBottom="16dp">
 
-        <!-- Etiqueta del Spinner de prioridad -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Prioridad"
-            android:textStyle="bold"
-            android:textSize="14sp"
-            android:layout_marginBottom="4dp" />
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etDescripcion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textMultiLine"
+                    android:minLines="3"
+                    android:gravity="top|start" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-        <!--
-            Spinner con los niveles de urgencia de la incidencia.
-            NuevaIncidenciaActivity lo rellena con prioridadesMostrar (textos legibles)
-            pero al guardar usa el código interno (prioridades) según el índice seleccionado.
-        -->
-        <Spinner
-            android:id="@+id/spinnerPrioridad"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp" />
+            <!-- Etiqueta del selector de tipo de FOD -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tipo de FOD"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:layout_marginBottom="4dp" />
 
-        <!-- Etiqueta de la sección de foto -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Foto del FOD"
-            android:textStyle="bold"
-            android:textSize="14sp"
-            android:layout_marginBottom="8dp" />
+            <!--
+                Spinner con las categorías de FOD.
+                Visualmente se muestran textos legibles, pero la Activity
+                guarda el valor interno correspondiente.
+            -->
+            <Spinner
+                android:id="@+id/spinnerTipoFod"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp" />
 
-        <!-- Botón que abre la cámara del dispositivo para capturar la imagen del FOD -->
-        <Button
-            android:id="@+id/btnTomarFoto"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="📷 Tomar foto"
-            android:layout_marginBottom="8dp" />
+            <!-- Etiqueta de la zona del avión -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Zona del avión"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:layout_marginBottom="4dp" />
 
-        <!--
-            Preview de la foto tomada con la cámara.
-            Oculto por defecto; NuevaIncidenciaActivity lo muestra tras capturar el bitmap.
-            scaleType="centerCrop" recorta la imagen para llenar el espacio manteniendo proporciones.
-        -->
-        <ImageView
-            android:id="@+id/imgPreview"
-            android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:scaleType="centerCrop"
-            android:visibility="gone"
-            android:layout_marginBottom="16dp" />
+            <!--
+                Zona heredada de la inspección origen.
+                Es un dato de solo lectura y por eso se muestra como TextView
+                con apariencia de campo visual.
+            -->
+            <TextView
+                android:id="@+id/tvZonaAvion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Zona: -"
+                android:textSize="14sp"
+                android:padding="12dp"
+                android:background="@android:drawable/editbox_background"
+                android:layout_marginBottom="16dp" />
 
-        <!-- Botón de guardado. Se deshabilita durante la subida a Storage y el INSERT -->
-        <Button
-            android:id="@+id/btnGuardar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Guardar incidencia"
-            android:padding="12dp" />
+            <!-- Etiqueta del selector de prioridad -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Prioridad"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:layout_marginBottom="4dp" />
 
-        <!-- Indicador de carga visible durante la subida de imagen y el INSERT en Supabase -->
-        <ProgressBar
-            android:id="@+id/progressBar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginTop="16dp"
-            android:visibility="gone" />
+            <!--
+                Spinner con el nivel de prioridad.
+                La Activity muestra una versión legible y guarda
+                el valor interno correspondiente.
+            -->
+            <Spinner
+                android:id="@+id/spinnerPrioridad"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp" />
 
-    </LinearLayout>
+            <!-- ========================= -->
+            <!-- BLOQUE: EVIDENCIA FOTOGRÁFICA -->
+            <!-- ========================= -->
+
+            <!-- Cabecera de la sección de fotografía -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Evidencia fotográfica"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Botón para abrir la cámara -->
+            <Button
+                android:id="@+id/btnTomarFoto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📷 Tomar foto"
+                android:layout_marginBottom="12dp" />
+
+            <!--
+                Tarjeta visual para la vista previa de la fotografía.
+                Mejora el aspecto general y mantiene coherencia con la pantalla
+                de detalle de incidencia.
+            -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#E5E5E5">
+
+                <!--
+                    Vista previa de la fotografía capturada.
+
+                    Corrección aplicada:
+                    - Altura fija de 220dp para evitar que la imagen crezca demasiado
+                      en tablets o pantallas grandes.
+                    - fitCenter para mostrar la imagen completa sin recortarla.
+                    - Fondo blanco para que visualmente quede mejor integrada.
+                    - Se mantiene oculta hasta que el usuario capture una imagen.
+                -->
+                <ImageView
+                    android:id="@+id/imgPreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="220dp"
+                    android:background="#FFFFFF"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Botón para guardar la incidencia -->
+            <Button
+                android:id="@+id/btnGuardar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Guardar incidencia"
+                android:padding="12dp" />
+
+            <!--
+                Indicador de carga mostrado durante la subida de la imagen
+                y el guardado en Supabase.
+            -->
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
 
 </ScrollView>
