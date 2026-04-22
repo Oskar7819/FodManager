@@ -34,6 +34,7 @@ import kotlinx.serialization.Serializable
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.UUID
+import android.graphics.drawable.BitmapDrawable
 
 /**
  * Payload que se inserta en la tabla `incidencias_fod`.
@@ -228,10 +229,21 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
         ActivityResultContracts.TakePicture()
     ) { success ->
         if (success && photoUri != null && photoFile?.exists() == true) {
-            imgPreview.setImageURI(null)
-            imgPreview.setImageURI(photoUri)
-            imgPreview.isVisible = true
-        } else {
+            try {
+                val bitmapCorregido = ImageUtils.decodeBitmapCorregido(photoFile!!.absolutePath)
+                imgPreview.setImageBitmap(bitmapCorregido)
+                imgPreview.isVisible = true
+            } catch (e: Exception) {
+                photoUri = null
+                photoFile = null
+
+                Toast.makeText(
+                    this,
+                    "No se pudo procesar la imagen capturada",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }else {
             photoUri = null
             photoFile = null
 
@@ -321,8 +333,14 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
                     restoredFile
                 )
 
-                imgPreview.setImageURI(photoUri)
-                imgPreview.isVisible = true
+                try {
+                    val bitmapCorregido = ImageUtils.decodeBitmapCorregido(restoredFile.absolutePath)
+                    imgPreview.setImageBitmap(bitmapCorregido)
+                    imgPreview.isVisible = true
+                } catch (e: Exception) {
+                    imgPreview.setImageURI(photoUri)
+                    imgPreview.isVisible = true
+                }
             }
         }
 
@@ -567,20 +585,11 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
                 // Nombre único del archivo en Storage
                 val nombreArchivo = "fod_${UUID.randomUUID()}.jpg"
 
-                // Leer bytes de la foto real
-                val bitmap = BitmapFactory.decodeFile(archivoImagen.absolutePath)
+                // Leer la foto corrigiendo antes la orientación EXIF
+                val bitmapCorregido = ImageUtils.decodeBitmapCorregido(archivoImagen.absolutePath)
 
-// Escalar imagen (máx 1280px)
-                val maxSize = 1280
-                val ratio = minOf(
-                    maxSize.toFloat() / bitmap.width,
-                    maxSize.toFloat() / bitmap.height
-                )
-
-                val newWidth = (bitmap.width * ratio).toInt()
-                val newHeight = (bitmap.height * ratio).toInt()
-
-                val resizedBitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+// Escalar imagen manteniendo proporción (máx 1280 px)
+                val resizedBitmap = ImageUtils.escalarBitmap(bitmapCorregido, 1280)
 
 // Comprimir JPEG
                 val stream = ByteArrayOutputStream()

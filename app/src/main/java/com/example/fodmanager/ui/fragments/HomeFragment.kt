@@ -29,6 +29,7 @@ import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
+
 // Clase auxiliar que resume el estado global de una inspección por día y aeronave
 data class InspeccionGlobalResumen(
     // Fecha del día de la inspección
@@ -406,8 +407,19 @@ class HomeFragment : Fragment() {
             return
         }
 
-        // Recorre cada incidencia para pintar su resumen
+        // Recorre cada incidencia para pintar las tarjetas
         ultimas.forEach { incidencia ->
+            // Infla la tarjeta visual
+            val tarjeta = layoutInflater.inflate(
+                R.layout.item_incidencia_dashboard,
+                llUltimasIncidencias,
+                false
+            )
+
+            // Obtiene la card principal
+            val cardIncidencia =
+                tarjeta.findViewById<MaterialCardView>(R.id.cardIncidenciaDashboard)
+
             // Obtiene el texto descriptivo de la aeronave
             val aeronaveTexto = incidencia.aeronaveId?.let { aeronavesMap[it] } ?: "Sin aeronave"
 
@@ -429,19 +441,37 @@ class HomeFragment : Fragment() {
                 else -> incidencia.estado ?: "Estado no disponible"
             }
 
-            // Construye el texto completo de la incidencia
-            val texto = buildString {
-                append("$aeronaveTexto\n")
-                append("Detectada: ${formatearFechaHora(incidencia.createdAt)}\n")
-                append("${calcularDuracionDashboard(incidencia.estado, incidencia.createdAt, incidencia.fechaCierre)}\n")
-                append("$declarante\n")
-                append("$estado · Zona: ${incidencia.zonaAvion ?: "No especificada"}")
-            }
+            // Rellena los datos de la tarjeta
+            tarjeta.findViewById<TextView>(R.id.tvAeronaveIncidencia).text = aeronaveTexto
+            tarjeta.findViewById<TextView>(R.id.tvFechaIncidencia).text =
+                "Detectada: ${formatearFechaHora(incidencia.createdAt)}"
+            tarjeta.findViewById<TextView>(R.id.tvEstadoIncidencia).text = estado
+            tarjeta.findViewById<TextView>(R.id.tvDuracionIncidencia).text =
+                calcularDuracionDashboard(
+                    incidencia.estado,
+                    incidencia.createdAt,
+                    incidencia.fechaCierre
+                )
+            tarjeta.findViewById<TextView>(R.id.tvDeclaranteIncidencia).text = declarante
+            tarjeta.findViewById<TextView>(R.id.tvZonaIncidencia).text =
+                "Zona: ${incidencia.zonaAvion ?: "No especificada"}"
 
-            // Añade la línea al contenedor
-            llUltimasIncidencias.addView(crearLineaDashboard(texto))
+            // Color de fondo según el estado de la incidencia
+            cardIncidencia.setCardBackgroundColor(
+                when (incidencia.estado) {
+                    "abierta" -> colorFondoRojoSuave
+                    "en_proceso" -> colorFondoNaranjaSuave
+                    "cerrada" -> colorFondoVerdeSuave
+                    else -> Color.WHITE
+                }
+            )
+
+            // Añade la tarjeta al contenedor
+            llUltimasIncidencias.addView(tarjeta)
         }
     }
+
+
 
     // Pinta los resúmenes globales de inspecciones recientes
     private fun pintarUltimasInspeccionesGlobales(
