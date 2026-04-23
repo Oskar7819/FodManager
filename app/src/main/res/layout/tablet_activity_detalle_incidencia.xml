@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Layout de DetalleIncidenciaActivity. Version para pantalla grande horizontal
+
+    Se usa un ScrollView para permitir desplazamiento vertical cuando
+    el contenido no cabe completo en pantalla.
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:paddingStart="16dp"
+    android:paddingTop="16dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="24dp">
+
+    <!--
+        Tarjeta principal que contiene toda la información de la incidencia.
+        Se usa MaterialCardView para dar una apariencia más limpia y profesional.
+    -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="#DADADA">
+
+        <!-- Contenedor principal del detalle -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Estado actual de la incidencia: es el dato más importante visualmente -->
+            <TextView
+                android:id="@+id/tvDetalleEstado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🔴 Abierta"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Prioridad: se deja arriba para destacar la urgencia -->
+            <TextView
+                android:id="@+id/tvDetallePrioridad"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Prioridad: -"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="20dp" />
+
+            <!-- Cabecera del bloque de información general -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Información de la incidencia"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Aeronave relacionada con la incidencia -->
+            <TextView
+                android:id="@+id/tvDetalleAeronave"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Aeronave: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Zona donde se detectó el FOD -->
+            <TextView
+                android:id="@+id/tvDetalleZona"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Zona: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Tipo de FOD -->
+            <TextView
+                android:id="@+id/tvDetalleTipoFod"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Tipo FOD: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Fecha y hora de detección -->
+            <TextView
+                android:id="@+id/tvFechaDeteccion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Fecha de detección: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Fecha y hora de cierre -->
+            <TextView
+                android:id="@+id/tvFechaCierre"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Fecha de cierre: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Tiempo o días abierta -->
+            <TextView
+                android:id="@+id/tvDiasAbierta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Días abierta: -"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="20dp" />
+
+            <!-- Cabecera del bloque del declarante -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Declarante"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Nombre y apellidos del declarante -->
+            <TextView
+                android:id="@+id/tvDetalleDeclarante"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Declarante: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="6dp" />
+
+            <!-- Número de empleado -->
+            <TextView
+                android:id="@+id/tvDetalleNumeroEmpleado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Nº empleado: -"
+                android:textSize="14sp"
+                android:layout_marginBottom="20dp" />
+
+            <!-- Cabecera de la descripción -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Descripción"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Descripción del hallazgo -->
+            <TextView
+                android:id="@+id/tvDetalleDescripcion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Sin descripción"
+                android:textSize="14sp"
+                android:lineSpacingExtra="2dp"
+                android:layout_marginBottom="20dp" />
+
+            <!-- Cabecera de la evidencia fotográfica -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Evidencia fotográfica"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <!--
+                Tarjeta secundaria para contener la imagen.
+                Esto mejora mucho el acabado visual de la pantalla.
+            -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#E5E5E5">
+
+                <!--
+                    Imagen asociada a la incidencia.
+
+                    Mejoras aplicadas:
+                    - Altura fija para que no crezca demasiado en tablet.
+                    - fitCenter para mostrar la imagen completa.
+                    - Fondo blanco para evitar sensación de hueco extraño
+                      si la foto no ocupa todo el alto.
+                -->
+                <ImageView
+                    android:id="@+id/imgDetalleIncidencia"
+                    android:layout_width="match_parent"
+                    android:layout_height="320dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="16dp"
+
+
+                    android:scaleType="centerCrop"
+
+                    android:visibility="gone" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!--
+                Contenedor de acciones de cambio de estado.
+                Se mantiene oculto por defecto y se mostrará solo si el usuario
+                tiene permisos y la incidencia no está cerrada.
+            -->
+            <LinearLayout
+                android:id="@+id/layoutBotonesEstado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <!-- Botón para pasar la incidencia a estado "en proceso" -->
+                <Button
+                    android:id="@+id/btnPasarEnProceso"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Pasar a en proceso"
+                    android:layout_marginBottom="10dp" />
+
+                <!-- Botón para cerrar la incidencia -->
+                <Button
+                    android:id="@+id/btnCerrarIncidencia"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Cerrar incidencia" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</ScrollView>
