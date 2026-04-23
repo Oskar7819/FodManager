@@ -198,10 +198,9 @@
                 <ImageView
                     android:id="@+id/imgDetalleIncidencia"
                     android:layout_width="match_parent"
-                    android:layout_height="320dp"
+                    android:layout_height="420dp"
                     android:layout_marginTop="16dp"
                     android:layout_marginBottom="16dp"
-
                     android:adjustViewBounds="true"
                     android:scaleType="fitCenter"
 

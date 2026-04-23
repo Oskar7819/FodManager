@@ -198,13 +198,10 @@
                 <ImageView
                     android:id="@+id/imgDetalleIncidencia"
                     android:layout_width="match_parent"
-                    android:layout_height="320dp"
+                    android:layout_height="1000dp"
                     android:layout_marginTop="16dp"
                     android:layout_marginBottom="16dp"
-
-
-                    android:scaleType="centerCrop"
-
+                    android:scaleType="fitCenter"
                     android:visibility="gone" />
             </com.google.android.material.card.MaterialCardView>
 
