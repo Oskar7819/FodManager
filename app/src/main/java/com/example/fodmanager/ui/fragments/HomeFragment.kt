@@ -511,15 +511,23 @@ class HomeFragment : Fragment() {
 
             // Rellena los datos de la tarjeta
             tarjeta.findViewById<TextView>(R.id.tvAeronaveIncidencia).text = aeronaveTexto
+            // Fecha y hora de detección más visible.
             tarjeta.findViewById<TextView>(R.id.tvFechaIncidencia).text =
-                "Detectada: ${formatearFechaHora(incidencia.createdAt)}"
-            tarjeta.findViewById<TextView>(R.id.tvEstadoIncidencia).text = estado
+                "📅 Detectada: ${formatearFechaHora(incidencia.createdAt)}"
+
+// Turno en el que apareció la incidencia FOD.
+            tarjeta.findViewById<TextView>(R.id.tvTurnoIncidencia).text =
+                "🕒 Turno: ${formatearTurnoIncidencia(incidencia.turnoInspeccion)}"
+
+// Tiempo que lleva abierta o que estuvo abierta.
             tarjeta.findViewById<TextView>(R.id.tvDuracionIncidencia).text =
                 calcularDuracionDashboard(
                     incidencia.estado,
                     incidencia.createdAt,
                     incidencia.fechaCierre
                 )
+            tarjeta.findViewById<TextView>(R.id.tvEstadoIncidencia).text = estado
+
             tarjeta.findViewById<TextView>(R.id.tvDeclaranteIncidencia).text = declarante
             tarjeta.findViewById<TextView>(R.id.tvZonaIncidencia).text =
                 "Zona: ${incidencia.zonaAvion ?: "No especificada"}"
@@ -886,5 +894,18 @@ class HomeFragment : Fragment() {
                 it
             }
         } ?: "Sin fecha"
+    }
+
+    /**
+     * Convierte el valor técnico de Supabase en texto claro para el usuario.
+     */
+    private fun formatearTurnoIncidencia(turno: String?): String {
+        return when (turno) {
+            "manana" -> "Mañana"
+            "tarde" -> "Tarde"
+            "noche" -> "Noche"
+            "cuarto_turno" -> "Cuarto turno"
+            else -> "No registrado"
+        }
     }
 }

@@ -75,6 +75,9 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
     private lateinit var tvDetalleZona: TextView
     private lateinit var tvDetalleTipoFod: TextView
 
+    // Turno en el que apareció la incidencia FOD.
+    private lateinit var tvDetalleTurnoIncidencia: TextView
+
     // Fechas y duración
     private lateinit var tvFechaDeteccion: TextView
     private lateinit var tvFechaCierre: TextView
@@ -144,6 +147,7 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
         btnCerrarIncidencia = findViewById(R.id.btnCerrarIncidencia)
         tvDetallePrioridad = findViewById(R.id.tvDetallePrioridad)
         btnGenerarPdf = findViewById(R.id.btnGenerarPdf)
+        tvDetalleTurnoIncidencia = findViewById(R.id.tvDetalleTurnoIncidencia)
 
         // Recupera el ID de la incidencia enviado desde la pantalla anterior
         incidenciaId = intent.getIntExtra("incidencia_id", -1)
@@ -293,10 +297,20 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
         tvDetalleZona.text = "Zona: ${incidencia.zonaAvion ?: "No especificada"}"
         tvDetalleTipoFod.text = "Tipo FOD: ${traducirTipoFod(incidencia.tipoFod)}"
         tvDetallePrioridad.text = "Prioridad: ${traducirPrioridad(incidencia.prioridad)}"
-        tvFechaDeteccion.text = "Fecha de detección: ${formatearFechaHora(incidencia.createdAt)}"
+
+// Turno en el que apareció el FOD.
+        tvDetalleTurnoIncidencia.text =
+            "🕒 Turno: ${formatearTurnoIncidencia(incidencia.turnoInspeccion)}"
+
+// Fechas y duración con textos más claros.
+        tvFechaDeteccion.text =
+            "📅 Fecha de detección: ${formatearFechaHora(incidencia.createdAt)}"
+
         tvFechaCierre.text =
-            "Fecha de cierre: ${incidencia.fechaCierre?.let { formatearFechaHora(it) } ?: "No cerrada"}"
-        tvDiasAbierta.text = calcularTextoDuracion(incidencia.createdAt, incidencia.fechaCierre)
+            "📅 Fecha de cierre: ${incidencia.fechaCierre?.let { formatearFechaHora(it) } ?: "No cerrada"}"
+
+        tvDiasAbierta.text =
+            calcularTextoDuracion(incidencia.createdAt, incidencia.fechaCierre)
 
         // Construye el nombre completo del declarante
         val nombreDeclarante = listOfNotNull(
@@ -580,5 +594,18 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
             return true
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    /**
+     * Convierte el valor técnico de Supabase en texto claro para el usuario.
+     */
+    private fun formatearTurnoIncidencia(turno: String?): String {
+        return when (turno) {
+            "manana" -> "Mañana"
+            "tarde" -> "Tarde"
+            "noche" -> "Noche"
+            "cuarto_turno" -> "Cuarto turno"
+            else -> "No registrado"
+        }
     }
 }

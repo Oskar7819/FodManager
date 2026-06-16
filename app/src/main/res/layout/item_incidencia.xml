@@ -43,8 +43,20 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="14sp"
-            android:textColor="@android:color/darker_gray"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
             android:layout_marginBottom="4dp" />
+
+        <!-- Turno en el que apareció la incidencia FOD. -->
+        <TextView
+            android:id="@+id/tvTurnoIncidencia"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🕒 Turno: Mañana"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="6dp" />
 
         <!-- Resumen del declarante: "Nombre Apellidos · Nº empleado" -->
         <TextView

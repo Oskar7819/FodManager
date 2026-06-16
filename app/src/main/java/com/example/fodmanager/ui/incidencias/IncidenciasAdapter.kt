@@ -45,6 +45,8 @@ class IncidenciasAdapter(
         val tvZona: TextView = view.findViewById(R.id.tvZona)
         val tvDescripcion: TextView = view.findViewById(R.id.tvDescripcion)
 
+        val tvTurnoIncidencia: TextView = view.findViewById(R.id.tvTurnoIncidencia)
+
         val tvPrioridad: TextView = view.findViewById(R.id.tvPrioridad)
     }
 
@@ -113,14 +115,31 @@ class IncidenciasAdapter(
 
         holder.tvZona.text = "Zona: ${incidencia.zonaAvion ?: "No especificada"}"
 
-        // Línea de fecha: fecha de detección + duración de la incidencia
-        holder.tvFecha.text = "Detectada: ${formatearFechaHora(incidencia.createdAt)} · ${calcularDuracion(incidencia.createdAt, incidencia.fechaCierre)}"
+        // Fecha y duración de la incidencia.
+// Ahora se muestra con icono y texto más claro.
+        holder.tvFecha.text =
+            "📅 Detectada: ${formatearFechaHora(incidencia.createdAt)} · ${calcularDuracion(incidencia.createdAt, incidencia.fechaCierre)}"
 
+// Turno en el que apareció el FOD.
+        holder.tvTurnoIncidencia.text =
+            "🕒 Turno: ${formatearTurnoIncidencia(incidencia.turnoInspeccion)}"
         holder.tvDescripcion.text = incidencia.descripcion
 
         holder.itemView.setOnClickListener { onItemClick(incidencia) }
     }
 
+    /**
+     * Convierte el valor técnico de Supabase en texto claro para el usuario.
+     */
+    private fun formatearTurnoIncidencia(turno: String?): String {
+        return when (turno) {
+            "manana" -> "Mañana"
+            "tarde" -> "Tarde"
+            "noche" -> "Noche"
+            "cuarto_turno" -> "Cuarto turno"
+            else -> "No registrado"
+        }
+    }
     /** Devuelve el número total de incidencias de la lista. */
     override fun getItemCount() = incidencias.size
 

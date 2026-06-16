@@ -31,10 +31,22 @@
             android:id="@+id/tvFechaIncidencia"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="17/03/2026 09:15"
-            android:textSize="13sp"
-            android:textColor="@android:color/darker_gray"
-            android:layout_marginBottom="8dp" />
+            android:text="📅 Detectada: 17/03/2026 09:15"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Turno en el que apareció la incidencia FOD. -->
+        <TextView
+            android:id="@+id/tvTurnoIncidencia"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🕒 Turno: Mañana"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="6dp" />
 
         <TextView
             android:id="@+id/tvEstadoIncidencia"
@@ -49,10 +61,11 @@
             android:id="@+id/tvDuracionIncidencia"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Abierta desde hace 2 h"
+            android:text="⏳ Abierta desde hace 2 días"
             android:textSize="14sp"
-            android:layout_marginBottom="4dp" />
-
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="6dp" />
         <TextView
             android:id="@+id/tvDeclaranteIncidencia"
             android:layout_width="match_parent"

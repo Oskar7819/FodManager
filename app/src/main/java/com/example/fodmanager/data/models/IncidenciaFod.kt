@@ -23,6 +23,16 @@ data class IncidenciaFod(
     @SerialName("aeronave_id")
     val aeronaveId: Int? = null,
 
+    // Turno en el que apareció la incidencia FOD.
+// Lo asigna Supabase copiándolo desde la inspección asociada.
+// Valores posibles:
+// - manana
+// - tarde
+// - noche
+// - cuarto_turno
+    @SerialName("turno_inspeccion")
+    val turnoInspeccion: String? = null,
+
     // ID de la inspección durante la cual se detectó el FOD.
 
     @SerialName("inspeccion_id")

@@ -90,6 +90,17 @@
                 android:textSize="14sp"
                 android:layout_marginBottom="6dp" />
 
+            <!-- Turno en el que apareció la incidencia FOD. -->
+            <TextView
+                android:id="@+id/tvDetalleTurnoIncidencia"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🕒 Turno: -"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:layout_marginBottom="6dp" />
+
             <!-- Fecha y hora de detección -->
             <TextView
                 android:id="@+id/tvFechaDeteccion"
@@ -97,6 +108,8 @@
                 android:layout_height="wrap_content"
                 android:text="Fecha de detección: -"
                 android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
                 android:layout_marginBottom="6dp" />
 
             <!-- Fecha y hora de cierre -->
@@ -104,8 +117,10 @@
                 android:id="@+id/tvFechaCierre"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Fecha de cierre: -"
+                android:text="📅 Fecha de cierre: -"
                 android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
                 android:layout_marginBottom="6dp" />
 
             <!-- Tiempo o días abierta -->
@@ -113,9 +128,10 @@
                 android:id="@+id/tvDiasAbierta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Días abierta: -"
+                android:text="⏳ Días abierta: -"
                 android:textSize="14sp"
                 android:textStyle="bold"
+                android:textColor="@android:color/black"
                 android:layout_marginBottom="20dp" />
 
             <!-- Cabecera del bloque del declarante -->
