@@ -120,4 +120,6 @@ dependencies {
         // Librería PhotoView para permitir zoom con dedos sobre imágenes
         implementation("io.getstream:photoview:1.0.0")
     }
+
+    implementation("com.onesignal:OneSignal:5.6.1")
 }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "553608303959",
+    "project_id": "fodmanager",
+    "storage_bucket": "fodmanager.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:553608303959:android:adebc978205aea44fc1a12",
+        "android_client_info": {
+          "package_name": "com.example.fodmanager"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB156aE2cTZx977lLm2Nc5b74y3RsOQ2Og"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

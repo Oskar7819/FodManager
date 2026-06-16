@@ -14,6 +14,11 @@ import com.example.fodmanager.ui.fragments.UsuariosFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.launch
 
+
+import com.onesignal.OneSignal
+
+
+
 // Activity principal que contiene la navegación inferior y los fragmentos de la app
 class HomeActivity : AppCompatActivity() {
 
@@ -23,6 +28,9 @@ class HomeActivity : AppCompatActivity() {
     // Método que se ejecuta al crear la activity
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        identificarUsuarioEnOneSignal()
+
 
         // Establece el layout principal de la activity
         setContentView(R.layout.activity_home)
@@ -81,5 +89,26 @@ class HomeActivity : AppCompatActivity() {
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragmentContainer, fragment)
             .commit()
+    }
+
+    private fun identificarUsuarioEnOneSignal() {
+        lifecycleScope.launch {
+            try {
+                val usuario = UsuarioRepository.getUsuarioActual()
+
+                // Une el usuario de Supabase con OneSignal
+                OneSignal.login(usuario.id.toString())
+
+                // Etiquetas útiles para segmentar
+                OneSignal.User.addTag("rol", usuario.rol)
+
+                usuario.aeronaveId?.let {
+                    OneSignal.User.addTag("aeronave_id", it.toString())
+                }
+
+            } catch (e: Exception) {
+                // No cerramos la app si falla OneSignal
+            }
+        }
     }
 }

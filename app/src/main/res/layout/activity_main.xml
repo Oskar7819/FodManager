@@ -43,17 +43,18 @@
         android:hint="Correo electrónico"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_marginBottom="16dp"
-        app:hintTextColor="@android:color/black"
-        app:boxStrokeColor="@android:color/black"
-        app:placeholderTextColor="@android:color/black">
+        app:hintTextColor="@android:color/white"
+        app:boxStrokeColor="@android:color/white"
+        app:boxStrokeWidth="1dp"
+        app:placeholderTextColor="@android:color/white">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etEmail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textEmailAddress"
-            android:textColor="@android:color/black"
-            android:textColorHint="@android:color/black" />
+            android:textColor="@android:color/white"
+            android:textColorHint="@android:color/white" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -67,8 +68,9 @@
         android:hint="Contraseña"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         app:passwordToggleEnabled="true"
-        app:hintTextColor="@android:color/black"
-        app:boxStrokeColor="@android:color/black"
+        app:hintTextColor="@android:color/white"
+        app:boxStrokeColor="@android:color/white"
+        app:boxStrokeWidth="1dp"
         app:placeholderTextColor="@android:color/black"
         android:layout_marginBottom="24dp">
 
@@ -77,8 +79,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textPassword"
-            android:textColor="@android:color/black"
-            android:textColorHint="@android:color/black" />
+            android:textColor="@android:color/white"
+            android:textColorHint="@android:color/white" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -89,6 +91,16 @@
         android:layout_height="wrap_content"
         android:text="Iniciar sesión"
         android:padding="12dp" />
+
+    <TextView
+        android:id="@+id/tvRecuperarPassword"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="He olvidado mi contraseña"
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp"
+        android:padding="8dp" />
 
     <!--
         Indicador de carga circular. Visible solo durante el proceso de autenticación.

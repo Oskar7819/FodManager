@@ -5,11 +5,13 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.fodmanager.R
 import com.example.fodmanager.data.repository.AuthRepository
+import com.example.fodmanager.data.repository.AuthRepository.recuperarPassword
 import com.example.fodmanager.data.repository.UsuarioRepository
 import com.example.fodmanager.ui.home.HomeActivity
 import com.google.android.material.textfield.TextInputEditText
@@ -29,6 +31,8 @@ class MainActivity : AppCompatActivity() {
 
     // Barra de progreso mostrada durante el proceso de login
     private lateinit var progressBar: ProgressBar
+
+    private lateinit var tvRecuperarPassword: TextView
 
     // Método que se ejecuta al crear la activity
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,6 +54,27 @@ class MainActivity : AppCompatActivity() {
         etPassword = findViewById(R.id.etPassword)
         btnLogin = findViewById(R.id.btnLogin)
         progressBar = findViewById(R.id.progressBar)
+
+        tvRecuperarPassword = findViewById(R.id.tvRecuperarPassword)
+
+        // Acción al pulsar el texto de recuperar contraseña
+        tvRecuperarPassword.setOnClickListener {
+            // Obtiene el email introducido por el usuario
+            val email = etEmail.text.toString().trim()
+
+            // Comprueba que el email esté relleno
+            if (email.isEmpty()) {
+                Toast.makeText(
+                    this,
+                    "Introduce tu email para recuperar la contraseña",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@setOnClickListener
+            }
+
+            // Llama a la función que solicita el email de recuperación
+            recuperarPassword(email)
+        }
 
         // Acción al pulsar el botón de login
         btnLogin.setOnClickListener {
@@ -104,6 +129,26 @@ class MainActivity : AppCompatActivity() {
 
                 // Vuelve a activar el botón de login
                 btnLogin.isEnabled = true
+            }
+        }
+    }
+
+    // // Función que solicita a Supabase el envío del email de recuperación de contraseña
+    private fun recuperarPassword(email: String) {
+        lifecycleScope.launch {
+            try {
+                AuthRepository.recuperarPassword(email)
+                Toast.makeText(
+                    this@MainActivity,
+                    "Se ha enviado un email para cambiar la contraseña",
+                    Toast.LENGTH_LONG
+                ).show()
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@MainActivity,
+                    "No se pudo enviar el email: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
     }

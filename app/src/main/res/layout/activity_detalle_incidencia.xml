@@ -233,7 +233,16 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Cerrar incidencia" />
+
             </LinearLayout>
+
+                <Button
+                    android:id="@+id/btnGenerarPdf"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="📄 Generar informe PDF"
+                    android:layout_marginTop="16dp" />
+
 
         </LinearLayout>
 

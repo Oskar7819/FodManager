@@ -23,6 +23,8 @@ import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.example.fodmanager.R
+import com.example.fodmanager.data.remote.EdgeFunctionsClient
+import com.example.fodmanager.data.remote.NotificacionFodRequest
 import com.example.fodmanager.data.remote.supabase
 import com.google.android.material.textfield.TextInputEditText
 import io.github.jan.supabase.auth.auth
@@ -112,6 +114,19 @@ data class InspeccionOrigenIncidencia(
 
     // Indica si en la inspección se detectó FOD
     @SerialName("con_fod") val conFod: Boolean
+)
+
+/**
+ * Respuesta mínima devuelta por Supabase
+ * al insertar una incidencia nueva.
+ *
+ * Solo necesitamos recuperar el ID generado
+ * para poder enviarlo en la notificación push.
+ */
+@Serializable
+data class IncidenciaCreadaResponse(
+    // ID autogenerado de la incidencia
+    val id: Int
 )
 
 /**
@@ -243,7 +258,7 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
                     Toast.LENGTH_SHORT
                 ).show()
             }
-        }else {
+        } else {
             photoUri = null
             photoFile = null
 
@@ -537,6 +552,7 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
      * 3. Subir imagen al bucket `fod-images`.
      * 4. Obtener URL pública.
      * 5. Insertar registro en `incidencias_fod`.
+     * 6. Si la prioridad es alta, solicitar a Supabase el envío de una notificación push mediante OneSignal.
      */
     private fun guardarIncidencia() {
         val usuario = usuarioLogueado ?: run {
@@ -588,10 +604,10 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
                 // Leer la foto corrigiendo antes la orientación EXIF
                 val bitmapCorregido = ImageUtils.decodeBitmapCorregido(archivoImagen.absolutePath)
 
-// Escalar imagen manteniendo proporción (máx 1280 px)
+                // Escalar imagen manteniendo proporción (máx 1280 px)
                 val resizedBitmap = ImageUtils.escalarBitmap(bitmapCorregido, 1280)
 
-// Comprimir JPEG
+                // Comprimir JPEG
                 val stream = ByteArrayOutputStream()
                 resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 80, stream)
 
@@ -606,8 +622,9 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
                 // Obtener URL pública
                 val imagenUrl = supabase.storage["fod-images"].publicUrl(nombreArchivo)
 
-                // Insertar incidencia
-                supabase.postgrest["incidencias_fod"].insert(
+                // Insertar incidencia y recuperar el ID generado por Supabase.
+                // Este ID se usará después para incluirlo en los datos de la notificación push.
+                val incidenciaCreada = supabase.postgrest["incidencias_fod"].insert(
                     InsertIncidenciaFodPayload(
                         inspeccionId = inspeccion.id,
                         usuarioId = usuario.id,
@@ -619,7 +636,41 @@ class NuevaIncidenciaActivity : AppCompatActivity() {
                         tipoFod = tipoFod,
                         prioridad = prioridad
                     )
-                )
+                ) {
+                    // Indicamos a Supabase que devuelva los datos insertados.
+                    // En este caso solo necesitamos el campo id.
+                    select()
+                }.decodeSingle<IncidenciaCreadaResponse>()
+
+                // Si la prioridad seleccionada es "alta",
+                // se llama a la Edge Function de Supabase.
+                //
+                // La Edge Function será la encargada de:
+                // - buscar los usuarios responsables,
+                // - filtrar por rol y aeronave,
+                // - enviar la notificación push mediante OneSignal.
+                //
+                // Si la prioridad es "baja", no se envía ninguna notificación.
+                if (prioridad == "alta") {
+                    EdgeFunctionsClient.enviarNotificacionFod(
+                        NotificacionFodRequest(
+                            // ID de la incidencia recién creada
+                            incidencia_id = incidenciaCreada.id,
+
+                            // Prioridad seleccionada
+                            prioridad = prioridad,
+
+                            // Aeronave asociada a la inspección/incidencia
+                            aeronave_id = inspeccion.aeronaveId,
+
+                            // Zona donde se encontró el FOD
+                            zona = inspeccion.zona,
+
+                            // Descripción de la incidencia
+                            descripcion = descripcion
+                        )
+                    )
+                }
 
                 Toast.makeText(
                     this@NuevaIncidenciaActivity,

@@ -28,6 +28,12 @@ import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
+import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
+import java.io.File
+
 /**
  * Payload mínimo para actualizar el estado de una incidencia FOD.
  */
@@ -54,9 +60,10 @@ data class UsuarioDetalleIncidencia(
  *
  * Mejoras aplicadas:
  * - La imagen se carga con fitCenter en vez de centerCrop.
- * - Así se evita recortar la fotografía y se ve mejor en la tablet o pantalla grande.
+ * - Así se evita recortar la fotografía y se ve mejor en tablet o pantalla grande.
  * - Al pulsar sobre la imagen, se abre una nueva pantalla para verla a tamaño completo.
  * - En la pantalla completa se podrá hacer zoom con dedos mediante PhotoView.
+ * - Se añade la generación de informe PDF de la incidencia.
  */
 class DetalleIncidenciaActivity : AppCompatActivity() {
 
@@ -90,11 +97,20 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
     private lateinit var btnPasarEnProceso: Button
     private lateinit var btnCerrarIncidencia: Button
 
+    // Botón para generar informe PDF
+    private lateinit var btnGenerarPdf: Button
+
     // Prioridad
     private lateinit var tvDetallePrioridad: TextView
 
-    // ID de la incidencia
+    // ID de la incidencia recibida por Intent
     private var incidenciaId: Int = -1
+
+    // Datos guardados para generar el PDF posteriormente
+    private var incidenciaActual: IncidenciaFod? = null
+    private var declaranteActual: Usuario? = null
+    private var aeronaveActual: Aeronave? = null
+    private var imagenPdf: Bitmap? = null
 
     /**
      * Roles que pueden cambiar el estado de una incidencia.
@@ -127,19 +143,32 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
         btnPasarEnProceso = findViewById(R.id.btnPasarEnProceso)
         btnCerrarIncidencia = findViewById(R.id.btnCerrarIncidencia)
         tvDetallePrioridad = findViewById(R.id.tvDetallePrioridad)
+        btnGenerarPdf = findViewById(R.id.btnGenerarPdf)
 
-        // Recupera el ID de la incidencia
+        // Recupera el ID de la incidencia enviado desde la pantalla anterior
         incidenciaId = intent.getIntExtra("incidencia_id", -1)
 
+        // Si no llega un ID válido, se cierra la pantalla
         if (incidenciaId == -1) {
             Toast.makeText(this, "Incidencia no válida", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
 
-        // Acciones de botones
-        btnPasarEnProceso.setOnClickListener { actualizarEstado("en_proceso") }
-        btnCerrarIncidencia.setOnClickListener { actualizarEstado("cerrada") }
+        // Acción para pasar la incidencia a estado en proceso
+        btnPasarEnProceso.setOnClickListener {
+            actualizarEstado("en_proceso")
+        }
+
+        // Acción para cerrar la incidencia
+        btnCerrarIncidencia.setOnClickListener {
+            actualizarEstado("cerrada")
+        }
+
+        // Acción para generar el informe PDF
+        btnGenerarPdf.setOnClickListener {
+            generarInformePdf()
+        }
 
         // Carga inicial del detalle
         cargarDetalle()
@@ -151,6 +180,7 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
     private fun cargarDetalle() {
         lifecycleScope.launch {
             try {
+                // Consulta la incidencia por ID
                 val incidencia = supabase.postgrest["incidencias_fod"]
                     .select {
                         filter {
@@ -160,6 +190,7 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
                     .decodeList<IncidenciaFod>()
                     .firstOrNull()
 
+                // Si no existe la incidencia, se informa y se cierra la pantalla
                 if (incidencia == null) {
                     Toast.makeText(
                         this@DetalleIncidenciaActivity,
@@ -170,8 +201,10 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
                     return@launch
                 }
 
+                // Obtiene el email del usuario autenticado
                 val email = supabase.auth.currentSessionOrNull()?.user?.email.orEmpty()
 
+                // Consulta el usuario actual para saber su rol
                 val usuarioActual = if (email.isNotBlank()) {
                     supabase.postgrest["usuarios"]
                         .select {
@@ -185,6 +218,7 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
                     null
                 }
 
+                // Consulta el usuario que declaró la incidencia
                 val declarante = incidencia.usuarioId?.let { userId ->
                     supabase.postgrest["usuarios"]
                         .select {
@@ -196,6 +230,7 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
                         .firstOrNull()
                 }
 
+                // Consulta la aeronave asociada a la incidencia
                 val aeronave = incidencia.aeronaveId?.let { aeronaveId ->
                     supabase.postgrest["aeronaves"]
                         .select {
@@ -207,7 +242,10 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
                         .firstOrNull()
                 }
 
+                // Rellena la interfaz con los datos cargados
                 pintarIncidencia(incidencia, declarante, aeronave)
+
+                // Configura los botones según rol y estado
                 configurarBotonesSegunRolYEstado(
                     rol = usuarioActual?.rol.orEmpty(),
                     estado = incidencia.estado.orEmpty()
@@ -231,8 +269,15 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
         declarante: Usuario?,
         aeronave: Aeronave?
     ) {
+        // Guarda los datos cargados para reutilizarlos al generar el PDF
+        incidenciaActual = incidencia
+        declaranteActual = declarante
+        aeronaveActual = aeronave
+
+        // Estado interno de la incidencia
         val estado = incidencia.estado ?: ""
 
+        // Traduce el estado interno a un texto visible
         tvDetalleEstado.text = when (estado) {
             "abierta" -> "🔴 Abierta"
             "en_proceso" -> "🟡 En proceso"
@@ -240,9 +285,11 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
             else -> if (estado.isBlank()) "Estado no disponible" else estado
         }
 
+        // Muestra la aeronave asociada
         tvDetalleAeronave.text =
             "Aeronave: ${aeronave?.modelo ?: "Sin modelo"} - ${aeronave?.numeroSerie ?: "Sin serie"}"
 
+        // Muestra zona, tipo FOD, prioridad y fechas
         tvDetalleZona.text = "Zona: ${incidencia.zonaAvion ?: "No especificada"}"
         tvDetalleTipoFod.text = "Tipo FOD: ${traducirTipoFod(incidencia.tipoFod)}"
         tvDetallePrioridad.text = "Prioridad: ${traducirPrioridad(incidencia.prioridad)}"
@@ -251,27 +298,51 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
             "Fecha de cierre: ${incidencia.fechaCierre?.let { formatearFechaHora(it) } ?: "No cerrada"}"
         tvDiasAbierta.text = calcularTextoDuracion(incidencia.createdAt, incidencia.fechaCierre)
 
+        // Construye el nombre completo del declarante
         val nombreDeclarante = listOfNotNull(
             declarante?.nombre?.takeIf { it.isNotBlank() },
             declarante?.apellidos?.takeIf { it.isNotBlank() }
         ).joinToString(" ")
 
+        // Muestra datos del declarante
         tvDetalleDeclarante.text =
             "Declarante: ${if (nombreDeclarante.isNotBlank()) nombreDeclarante else "Usuario desconocido"}"
         tvDetalleNumeroEmpleado.text =
             "Nº empleado: ${declarante?.numeroEmpleado ?: "No especificado"}"
+
+        // Muestra descripción
         tvDetalleDescripcion.text = incidencia.descripcion ?: "Sin descripción"
 
         if (!incidencia.imagenUrl.isNullOrBlank()) {
             // Si existe imagen, se hace visible el ImageView
             imgDetalleIncidencia.visibility = View.VISIBLE
 
-            // Carga de la imagen con Glide
+            // Carga de la imagen con Glide para mostrarla en pantalla
             Glide.with(this)
                 .load(incidencia.imagenUrl)
                 .fitCenter()
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .into(imgDetalleIncidencia)
+
+            // También se carga la imagen como Bitmap para insertarla en el PDF
+            Glide.with(this)
+                .asBitmap()
+                .load(incidencia.imagenUrl)
+                .into(object : CustomTarget<Bitmap>() {
+
+                    override fun onResourceReady(
+                        resource: Bitmap,
+                        transition: Transition<in Bitmap>?
+                    ) {
+                        // Guarda el Bitmap para usarlo posteriormente en el PDF
+                        imagenPdf = resource
+                    }
+
+                    override fun onLoadCleared(placeholder: Drawable?) {
+                        // Limpia el Bitmap si Glide libera el recurso
+                        imagenPdf = null
+                    }
+                })
 
             // Al pulsar la imagen, se abre la pantalla de imagen completa
             imgDetalleIncidencia.setOnClickListener {
@@ -282,12 +353,80 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
 
                 startActivity(intent)
             }
+
         } else {
             // Si no existe imagen, se oculta el ImageView
             imgDetalleIncidencia.visibility = View.GONE
 
             // Se elimina el click por seguridad
             imgDetalleIncidencia.setOnClickListener(null)
+
+            // Limpia la imagen guardada para PDF
+            imagenPdf = null
+        }
+    }
+
+    /**
+     * Genera un informe PDF de la incidencia y abre el menú compartir.
+     */
+    private fun generarInformePdf() {
+        // Recupera la incidencia actualmente cargada
+        val incidencia = incidenciaActual
+
+        // Verifica que la incidencia exista
+        if (incidencia == null) {
+            Toast.makeText(
+                this,
+                "La incidencia aún no está cargada",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        try {
+            // Construye texto descriptivo de aeronave
+            val aeronaveTexto =
+                "${aeronaveActual?.modelo ?: "Sin modelo"} - ${aeronaveActual?.numeroSerie ?: "Sin serie"}"
+
+            // Construye nombre completo del declarante
+            val declaranteTexto =
+                "${declaranteActual?.nombre ?: "Sin nombre"} ${declaranteActual?.apellidos ?: ""}".trim()
+
+            // Genera el archivo PDF usando la clase generadora PdfIncidenciaGenerator
+            val archivo: File = PdfIncidenciaGenerator.generarPdfIncidencia(
+                context = this,
+                incidenciaId = incidencia.id,
+                estado = tvDetalleEstado.text.toString(),
+                prioridad = tvDetallePrioridad.text.toString(),
+                aeronave = aeronaveTexto,
+                zona = tvDetalleZona.text.toString(),
+                tipoFod = tvDetalleTipoFod.text.toString(),
+                fechaDeteccion = tvFechaDeteccion.text.toString(),
+                fechaCierre = tvFechaCierre.text.toString(),
+                diasAbierta = tvDiasAbierta.text.toString(),
+                declarante = declaranteTexto,
+                numeroEmpleado = tvDetalleNumeroEmpleado.text.toString(),
+                descripcion = tvDetalleDescripcion.text.toString(),
+                imagen = imagenPdf
+            )
+
+            // Informa al usuario
+            Toast.makeText(
+                this,
+                "PDF generado correctamente",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            // Abre el menú compartir de Android
+            PdfIncidenciaGenerator.compartirPdf(this, archivo)
+
+        } catch (e: Exception) {
+            // Muestra error si algo falla al generar el PDF
+            Toast.makeText(
+                this,
+                "Error generando PDF: ${e.message}",
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -325,9 +464,11 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
     private fun actualizarEstado(nuevoEstado: String) {
         lifecycleScope.launch {
             try {
+                // Si se cierra la incidencia, se guarda la fecha de cierre
                 val fechaCierre =
                     if (nuevoEstado == "cerrada") OffsetDateTime.now().toString() else null
 
+                // Actualiza el estado en Supabase
                 supabase.postgrest["incidencias_fod"]
                     .update(
                         UpdateEstadoIncidenciaPayload(
@@ -346,6 +487,7 @@ class DetalleIncidenciaActivity : AppCompatActivity() {
                     Toast.LENGTH_SHORT
                 ).show()
 
+                // Recarga el detalle para refrescar la interfaz
                 cargarDetalle()
 
             } catch (e: Exception) {

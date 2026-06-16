@@ -47,4 +47,9 @@ object AuthRepository {
         // Obtiene el token de acceso de la sesión actual
         return supabase.auth.currentSessionOrNull()?.accessToken
     }
+
+    // Recuperación de contraseña
+    suspend fun recuperarPassword(email: String) {
+        supabase.auth.resetPasswordForEmail(email)
+    }
 }
