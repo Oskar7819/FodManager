@@ -64,6 +64,9 @@ class DetalleInspeccionActivity : AppCompatActivity() {
 
     private lateinit var tvZona: TextView
     private lateinit var tvFecha: TextView
+
+    // Muestra el turno operativo calculado por Supabase.
+    private lateinit var tvTurnoInspeccion: TextView
     private lateinit var tvConFod: TextView
     private lateinit var tvObservaciones: TextView
 
@@ -88,6 +91,9 @@ class DetalleInspeccionActivity : AppCompatActivity() {
 
         tvZona = findViewById(R.id.tvDetalleZona)
         tvFecha = findViewById(R.id.tvDetalleFecha)
+
+        tvTurnoInspeccion = findViewById(R.id.tvDetalleTurnoInspeccion)
+
         tvConFod = findViewById(R.id.tvDetalleConFod)
         tvObservaciones = findViewById(R.id.tvDetalleObservaciones)
         tvUsuario = findViewById(R.id.tvDetalleUsuario)
@@ -143,10 +149,16 @@ class DetalleInspeccionActivity : AppCompatActivity() {
                         val (anio, mes, dia) = partes[0].split("-")
                         val hora = partes[1].substring(0, 5)
                         "$dia/$mes/$anio  $hora"
-                    } catch (e: Exception) { it }
+                    } catch (e: Exception) {
+                        it
+                    }
                 } ?: "Sin fecha"
 
                 tvFecha.text = "Fecha: $fechaFormateada"
+
+                // Muestra el turno calculado por Supabase.
+                tvTurnoInspeccion.text =
+                    "Turno: ${formatearTurnoInspeccion(inspeccion.turnoInspeccion)}"
                 tvConFod.text = if (inspeccion.conFod) "⚠️ Con FOD" else "✅ Todo OK · Sin FOD"
                 tvObservaciones.text = inspeccion.observaciones ?: "Sin observaciones"
 
@@ -157,7 +169,8 @@ class DetalleInspeccionActivity : AppCompatActivity() {
 
                 tvUsuario.text = "Nombre: ${inspector.nombre}"
                 tvUsuarioApellidos.text = "Apellidos: ${inspector.apellidos}"
-                tvUsuarioNumeroEmpleado.text = "Nº empleado: ${inspector.numeroEmpleado ?: "No especificado"}"
+                tvUsuarioNumeroEmpleado.text =
+                    "Nº empleado: ${inspector.numeroEmpleado ?: "No especificado"}"
 
                 // Carga el usuario logueado para determinar si puede registrar incidencia
                 val email = supabase.auth.currentSessionOrNull()?.user?.email.orEmpty()
@@ -170,10 +183,29 @@ class DetalleInspeccionActivity : AppCompatActivity() {
                         View.VISIBLE else View.GONE
 
             } catch (e: Exception) {
-                Toast.makeText(this@DetalleInspeccionActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this@DetalleInspeccionActivity,
+                    "Error: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
     }
+
+        /**
+         * Convierte el valor técnico guardado en Supabase
+         * en un texto claro para el usuario.
+         */
+        private fun formatearTurnoInspeccion(turno: String?): String {
+            return when (turno) {
+                "manana" -> "Mañana"
+                "tarde" -> "Tarde"
+                "noche" -> "Noche"
+                "cuarto_turno" -> "Cuarto turno"
+                else -> "No registrado"
+            }
+        }
+
 
     /** Gestiona el botón de atrás de la ActionBar. */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

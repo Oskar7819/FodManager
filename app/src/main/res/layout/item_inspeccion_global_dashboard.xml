@@ -31,10 +31,24 @@
             android:id="@+id/tvFechaGlobal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="17/03/2026"
-            android:textSize="13sp"
-            android:textColor="@android:color/darker_gray"
-            android:layout_marginBottom="8dp" />
+            android:text="📅 Fecha: 16/06/2026"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Turno de la inspección global.
+     Ahora una inspección global se agrupa por día, aeronave y turno. -->
+        <TextView
+            android:id="@+id/tvTurnoGlobal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🕒 Turno: Mañana"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="10dp" />
 
         <TextView
             android:id="@+id/tvEstadoCompletitudGlobal"

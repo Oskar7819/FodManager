@@ -35,6 +35,9 @@ data class InspeccionGlobalResumen(
     // Fecha del día de la inspección
     val fechaDia: String,
 
+    // Turno operativo de la inspección: manana, tarde, noche o cuarto_turno
+    val turnoInspeccion: String,
+
     // Texto descriptivo de la aeronave
     val aeronaveTexto: String,
 
@@ -74,6 +77,13 @@ class HomeFragment : Fragment() {
 
     // KPI de aeronaves activas visibles
     private lateinit var tvKpiAeronavesActivas: TextView
+
+    // Textos de la tarjeta "Inspecciones por turno de hoy"
+    private lateinit var tvDashboardTurnoManana: TextView
+    private lateinit var tvDashboardTurnoTarde: TextView
+    private lateinit var tvDashboardTurnoNoche: TextView
+    private lateinit var tvDashboardTurnoCuarto: TextView
+    private lateinit var tvDashboardTurnoTotal: TextView
 
     // Contenedor para mostrar el estado de las aeronaves
     private lateinit var llEstadoAeronaves: LinearLayout
@@ -124,6 +134,13 @@ class HomeFragment : Fragment() {
         tvKpiAbiertas = view.findViewById(R.id.tvKpiAbiertas)
         tvKpiEnProceso = view.findViewById(R.id.tvKpiEnProceso)
         tvKpiAeronavesActivas = view.findViewById(R.id.tvKpiAeronavesActivas)
+
+        // Vinculación de la tarjeta de inspecciones por turno
+        tvDashboardTurnoManana = view.findViewById(R.id.tvDashboardTurnoManana)
+        tvDashboardTurnoTarde = view.findViewById(R.id.tvDashboardTurnoTarde)
+        tvDashboardTurnoNoche = view.findViewById(R.id.tvDashboardTurnoNoche)
+        tvDashboardTurnoCuarto = view.findViewById(R.id.tvDashboardTurnoCuarto)
+        tvDashboardTurnoTotal = view.findViewById(R.id.tvDashboardTurnoTotal)
         llEstadoAeronaves = view.findViewById(R.id.llEstadoAeronaves)
         llUltimasIncidencias = view.findViewById(R.id.llUltimasIncidencias)
         llUltimasInspeccionesGlobales = view.findViewById(R.id.llUltimasInspeccionesGlobales)
@@ -213,6 +230,10 @@ class HomeFragment : Fragment() {
                 // Pinta cada sección del dashboard
                 pintarResumenRol(usuarioActual, aeronavesVisibles.size, incidencias)
                 pintarKpis(inspecciones, incidencias, aeronavesVisibles.size)
+
+                // Nueva tarjeta: resumen de inspecciones por turno de hoy.
+                // Usa las inspecciones visibles según el rol del usuario.
+                pintarInspeccionesPorTurno(inspecciones)
                 pintarEstadoAeronaves(aeronavesVisibles, incidencias, inspecciones)
                 pintarUltimasIncidencias(incidencias, aeronavesMap, usuariosMap)
                 pintarUltimasInspeccionesGlobales(inspecciones, aeronavesMap)
@@ -283,6 +304,53 @@ class HomeFragment : Fragment() {
         // Muestra el número de aeronaves activas visibles
         tvKpiAeronavesActivas.text = aeronavesVisibles.toString()
     }
+
+
+    /**
+     * Pinta en el dashboard cuántas inspecciones se han registrado hoy
+     * por cada turno operativo.
+     *
+     * El turno no se calcula aquí.
+     * El turno ya viene calculado desde Supabase en inspeccion.turnoInspeccion.
+     *
+     * Reglas:
+     * - manana:        día ordinario de 07:00 a 14:59
+     * - tarde:         día ordinario de 15:00 a 22:59
+     * - noche:         día ordinario de 23:00 a 06:59
+     * - cuarto_turno:  fechas cargadas en calendario_cuarto_turno
+     */
+    /**
+     * Pinta en el dashboard cuántas inspecciones se han registrado hoy
+     * por cada turno operativo.
+     *
+     * El turno y la fecha local de inspección los calcula Supabase.
+     */
+    private fun pintarInspeccionesPorTurno(inspecciones: List<Inspeccion>) {
+        val hoy = java.time.LocalDate.now().toString()
+
+        /*
+         * Usamos fechaInspeccionDia porque es la fecha local calculada por Supabase.
+         * Si alguna inspección antigua no tiene ese campo, usamos fecha como respaldo.
+         */
+        val inspeccionesHoy = inspecciones.filter { inspeccion ->
+            inspeccion.fechaInspeccionDia == hoy ||
+                    (inspeccion.fechaInspeccionDia == null && inspeccion.fecha?.startsWith(hoy) == true)
+        }
+
+        val manana = inspeccionesHoy.count { it.turnoInspeccion == "manana" }
+        val tarde = inspeccionesHoy.count { it.turnoInspeccion == "tarde" }
+        val noche = inspeccionesHoy.count { it.turnoInspeccion == "noche" }
+        val cuartoTurno = inspeccionesHoy.count { it.turnoInspeccion == "cuarto_turno" }
+
+        val total = inspeccionesHoy.size
+
+        tvDashboardTurnoManana.text = "Mañana: $manana"
+        tvDashboardTurnoTarde.text = "Tarde: $tarde"
+        tvDashboardTurnoNoche.text = "Noche: $noche"
+        tvDashboardTurnoCuarto.text = "Cuarto turno: $cuartoTurno"
+        tvDashboardTurnoTotal.text = "Total hoy: $total"
+    }
+
 
     // Pinta el estado actual de cada aeronave visible
     private fun pintarEstadoAeronaves(
@@ -473,7 +541,14 @@ class HomeFragment : Fragment() {
 
 
 
-    // Pinta los resúmenes globales de inspecciones recientes
+    // Pinta los resúmenes globales de inspecciones recientes.
+// Ahora una inspección global se agrupa por:
+// - aeronave
+// - día
+// - turno
+//
+// Esto permite que una misma aeronave tenga una inspección global de mañana,
+// otra de tarde, otra de noche y otra de cuarto turno.
     private fun pintarUltimasInspeccionesGlobales(
         inspecciones: List<Inspeccion>,
         aeronavesMap: Map<Int, String>
@@ -481,30 +556,50 @@ class HomeFragment : Fragment() {
         // Limpia el contenedor
         llUltimasInspeccionesGlobales.removeAllViews()
 
-        // Filtra solo inspecciones que tienen fecha válida
-        val inspeccionesConFecha = inspecciones.filter { !it.fecha.isNullOrBlank() }
+        // Filtra solo inspecciones que tienen fecha válida.
+        // Usamos fechaInspeccionDia si existe, porque la calcula Supabase en horario local.
+        // Si alguna inspección antigua no tiene ese campo, usamos fecha como respaldo.
+        val inspeccionesConFecha = inspecciones.filter { inspeccion ->
+            !inspeccion.fechaInspeccionDia.isNullOrBlank() || !inspeccion.fecha.isNullOrBlank()
+        }
 
-        // Agrupa por aeronave y por día
+        // Agrupa por aeronave, día y turno.
+        // Antes se agrupaba solo por aeronave y día.
+        // Ahora añadimos turno_inspeccion para no mezclar mañana, tarde, noche y cuarto turno.
         val grupos = inspeccionesConFecha.groupBy { inspeccion ->
-            val dia = inspeccion.fecha!!.substring(0, 10)
+            val dia = inspeccion.fechaInspeccionDia
+                ?: inspeccion.fecha!!.substring(0, 10)
+
             val aeronave = inspeccion.aeronaveId ?: -1
-            "$aeronave|$dia"
+
+            val turno = inspeccion.turnoInspeccion ?: "sin_turno"
+
+            "$aeronave|$dia|$turno"
         }
 
         // Genera un resumen por cada grupo
         val resumenes = grupos.map { (clave, listaGrupo) ->
-            val (aeronaveId, fechaDia) = clave.split("|").let { it[0].toInt() to it[1] }
+            val partes = clave.split("|")
+
+            val aeronaveId = partes[0].toInt()
+            val fechaDia = partes[1]
+            val turno = partes[2]
+
             val zonasInspeccionadasSet = listaGrupo.map { it.zona }.toSet()
 
             InspeccionGlobalResumen(
                 fechaDia = fechaDia,
+                turnoInspeccion = turno,
                 aeronaveTexto = aeronavesMap[aeronaveId] ?: "Sin aeronave",
                 zonasInspeccionadas = zonasObligatorias.filter { it in zonasInspeccionadasSet },
                 zonasFaltantes = zonasObligatorias.filter { it !in zonasInspeccionadasSet },
                 zonasConFod = listaGrupo.filter { it.conFod }.map { it.zona }.distinct(),
                 hayFod = listaGrupo.any { it.conFod }
             )
-        }.sortedByDescending { it.fechaDia }.take(5)
+        }.sortedWith(
+            compareByDescending<InspeccionGlobalResumen> { it.fechaDia }
+                .thenBy { ordenTurnoInspeccion(it.turnoInspeccion) }
+        ).take(5)
 
         // Si no hay resúmenes, muestra mensaje informativo
         if (resumenes.isEmpty()) {
@@ -529,11 +624,19 @@ class HomeFragment : Fragment() {
 
             // Rellena datos básicos de la tarjeta
             tarjeta.findViewById<TextView>(R.id.tvAeronaveGlobal).text = resumen.aeronaveTexto
+
+            // Muestra la fecha con icono y texto claro para que destaque en la tarjeta.
             tarjeta.findViewById<TextView>(R.id.tvFechaGlobal).text =
-                formatearSoloFecha(resumen.fechaDia)
+                "📅 Fecha: ${formatearSoloFecha(resumen.fechaDia)}"
+
+            // Nuevo campo: muestra el turno de esa inspección global
+            // Muestra el turno de forma más visible.
+            tarjeta.findViewById<TextView>(R.id.tvTurnoGlobal).text =
+                "🕒 Turno: ${formatearTurnoInspeccion(resumen.turnoInspeccion)}"
 
             // Configura el texto de completitud de la inspección
             val tvCompletitud = tarjeta.findViewById<TextView>(R.id.tvEstadoCompletitudGlobal)
+
             if (resumen.zonasFaltantes.isEmpty()) {
                 tvCompletitud.text =
                     "✅ Completa (${resumen.zonasInspeccionadas.size}/${zonasObligatorias.size} zonas)"
@@ -548,13 +651,14 @@ class HomeFragment : Fragment() {
 
             // Configura el texto del estado FOD
             val tvFod = tarjeta.findViewById<TextView>(R.id.tvEstadoFodGlobal)
+
             if (resumen.hayFod) {
                 tvFod.text = "🚨 Se detectó FOD en ${resumen.zonasConFod.size} zona(s)"
                 tvFod.setTextColor(
                     ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark)
                 )
             } else {
-                tvFod.text = "🟢 Sin FOD declarado en esa inspección global"
+                tvFod.text = "🟢 Sin FOD declarado en esta inspección global por turno"
                 tvFod.setTextColor(
                     ContextCompat.getColor(requireContext(), android.R.color.black)
                 )
@@ -605,6 +709,33 @@ class HomeFragment : Fragment() {
             llUltimasInspeccionesGlobales.addView(tarjeta)
         }
     }
+
+    /**
+     * Convierte el valor técnico de Supabase en texto claro para el usuario.
+     */
+    private fun formatearTurnoInspeccion(turno: String?): String {
+        return when (turno) {
+            "manana" -> "Mañana"
+            "tarde" -> "Tarde"
+            "noche" -> "Noche"
+            "cuarto_turno" -> "Cuarto turno"
+            else -> "No registrado"
+        }
+    }
+
+    /**
+     * Da un orden lógico a los turnos para el dashboard.
+     */
+    private fun ordenTurnoInspeccion(turno: String?): Int {
+        return when (turno) {
+            "manana" -> 1
+            "tarde" -> 2
+            "noche" -> 3
+            "cuarto_turno" -> 4
+            else -> 99
+        }
+    }
+
 
     // Muestra u oculta una sección de zonas dentro de una tarjeta
     private fun mostrarSeccionZonas(

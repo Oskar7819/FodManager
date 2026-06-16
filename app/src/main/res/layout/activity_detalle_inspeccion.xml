@@ -45,6 +45,18 @@
                 android:layout_height="wrap_content"
                 android:textSize="14sp"
                 android:textColor="@android:color/darker_gray"
+                android:layout_marginBottom="4dp" />
+
+            <!-- Turno operativo de la inspección.
+     Lo calcula Supabase automáticamente:
+     Mañana, Tarde, Noche o Cuarto turno. -->
+            <TextView
+                android:id="@+id/tvDetalleTurnoInspeccion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Turno: No registrado"
+                android:textSize="14sp"
+                android:textColor="@android:color/darker_gray"
                 android:layout_marginBottom="16dp" />
 
             <!-- Resultado de la inspección: "⚠️ Con FOD" o "✅ Todo OK · Sin FOD" -->

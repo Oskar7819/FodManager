@@ -36,6 +36,9 @@ class InspeccionesAdapter(
         val tvZona: TextView = view.findViewById(R.id.tvZona)
         val tvAeronave: TextView = view.findViewById(R.id.tvAeronave)
         val tvFecha: TextView = view.findViewById(R.id.tvFecha)
+
+        // Turno operativo de la inspección.
+        val tvTurnoInspeccion: TextView = view.findViewById(R.id.tvTurnoInspeccion)
         /** Línea compacta "Nombre Apellidos · Nº empleado" del inspector. */
         val tvInspectorResumen: TextView = view.findViewById(R.id.tvInspectorResumen)
         val tvConFod: TextView = view.findViewById(R.id.tvConFod)
@@ -78,6 +81,10 @@ class InspeccionesAdapter(
 
         holder.tvFecha.text = fechaFormateada
 
+        // Muestra el turno calculado por Supabase.
+        holder.tvTurnoInspeccion.text =
+            "Turno: ${formatearTurnoInspeccion(inspeccion.turnoInspeccion)}"
+
         val usuario = usuarios[inspeccion.usuarioId]
 
         val nombreCompleto = buildString {
@@ -92,6 +99,19 @@ class InspeccionesAdapter(
         holder.tvConFod.text = if (inspeccion.conFod) "⚠️ Con FOD" else "✅ Sin FOD"
 
         holder.itemView.setOnClickListener { onItemClick(inspeccion) }
+    }
+
+    /**
+     * Convierte el valor técnico de Supabase en texto legible.
+     */
+    private fun formatearTurnoInspeccion(turno: String?): String {
+        return when (turno) {
+            "manana" -> "Mañana"
+            "tarde" -> "Tarde"
+            "noche" -> "Noche"
+            "cuarto_turno" -> "Cuarto turno"
+            else -> "No registrado"
+        }
     }
 
     /** Devuelve el número total de inspecciones de la lista. */

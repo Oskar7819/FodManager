@@ -22,6 +22,14 @@ data class Inspeccion(
 
     val fecha: String? = null,
 
+    // Fecha local de inspección en España.
+    // La calcula Supabase mediante trigger.
+    // Se usa para evitar duplicados por día y turno.
+    @SerialName("fecha_inspeccion_dia")
+    val fechaInspeccionDia: String? = null,
+
+
+
     // Zona de la aeronave donde se realizó la inspección
 
     val zona: String = "",
@@ -42,5 +50,15 @@ data class Inspeccion(
     // Posición de la aeronave dentro del hangar en el momento de la inspección.
 
 
-    @SerialName("ubicacion_aeronave") val ubicacionAeronave: String? = null
+    @SerialName("ubicacion_aeronave") val ubicacionAeronave: String? = null,
+
+    // Turno operativo de la inspección.
+    // Lo calcula Supabase mediante trigger, no Android.
+    // Valores posibles:
+    // - manana
+    // - tarde
+    // - noche
+    // - cuarto_turno
+    @SerialName("turno_inspeccion")
+val turnoInspeccion: String? = null
 )

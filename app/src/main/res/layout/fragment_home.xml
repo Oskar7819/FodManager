@@ -85,84 +85,6 @@
                         android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-
-            <!-- KPI: número de incidencias en estado "abierta" -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="6dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Abiertas"
-                        android:textSize="13sp"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="8dp" />
-
-                    <TextView
-                        android:id="@+id/tvKpiAbiertas"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textSize="22sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-        </LinearLayout>
-
-        <!--
-            Segunda fila de KPIs: "En proceso" y "Aeronaves activas".
-            Misma estructura que la primera fila.
-        -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="16dp">
-
-            <!-- KPI: número de incidencias en estado "en_proceso" -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="6dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="En proceso"
-                        android:textSize="13sp"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="8dp" />
-
-                    <TextView
-                        android:id="@+id/tvKpiEnProceso"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textSize="22sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
             <!-- KPI: número de aeronaves activas visibles para el rol del usuario -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="0dp"
@@ -195,7 +117,173 @@
                         android:textStyle="bold" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+
         </LinearLayout>
+
+        <!--
+            Segunda fila de KPIs: "En proceso" y "Aeronaves activas".
+            Misma estructura que la primera fila.
+        -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+
+
+            <!-- KPI: número de incidencias en estado "en_proceso" -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=" Incidencias en proceso"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:id="@+id/tvKpiEnProceso"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            <!-- KPI: número de incidencias en estado "abierta" -->
+
+            <com.google.android.material.card.MaterialCardView
+
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+
+
+
+                <LinearLayout
+
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Incidencias abiertas"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp" />
+
+
+                    <TextView
+                        android:id="@+id/tvKpiAbiertas"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+
+        </LinearLayout>
+
+
+        <!--
+    Tarjeta de inspecciones por turno.
+    HomeFragment la rellena con las inspecciones visibles para el usuario actual.
+-->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🕒 Inspecciones por turno de hoy"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- Turno mañana: 07:00 - 14:59 en día ordinario -->
+                <TextView
+                    android:id="@+id/tvDashboardTurnoManana"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Mañana: 0"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="4dp" />
+
+                <!-- Turno tarde: 15:00 - 22:59 en día ordinario -->
+                <TextView
+                    android:id="@+id/tvDashboardTurnoTarde"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Tarde: 0"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="4dp" />
+
+                <!-- Turno noche: 23:00 - 06:59 en día ordinario -->
+                <TextView
+                    android:id="@+id/tvDashboardTurnoNoche"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Noche: 0"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="4dp" />
+
+                <!-- Cuarto turno: fechas marcadas en calendario_cuarto_turno -->
+                <TextView
+                    android:id="@+id/tvDashboardTurnoCuarto"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Cuarto turno: 0"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- Total de inspecciones visibles hoy -->
+                <TextView
+                    android:id="@+id/tvDashboardTurnoTotal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Total hoy: 0"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
 
         <!--
             Sección "Situación actual por avión".
@@ -214,6 +302,9 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp">
+
+
+
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -289,7 +380,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="📋 Últimas 5 inspecciones globales"
+                    android:text="📋 Últimas 5 inspecciones globales por turno"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:layout_marginBottom="4dp" />
@@ -298,7 +389,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Criterio usado: una inspección global = todas las zonas inspeccionadas de una aeronave en un mismo día"
+                    android:text="Criterio usado: una inspección global = zonas inspeccionadas de una aeronave en un mismo día y turno"
                     android:textSize="12sp"
                     android:layout_marginBottom="8dp" />
 

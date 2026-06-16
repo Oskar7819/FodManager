@@ -40,6 +40,8 @@ class ResumenInspeccionesDiariasAdapter(
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val cardRoot: androidx.cardview.widget.CardView = view.findViewById(R.id.cardRoot)
         val tvFecha: TextView = view.findViewById(R.id.tvFechaResumen)
+
+        val tvTurno: TextView = view.findViewById(R.id.tvTurnoResumen)
         val tvAeronave: TextView = view.findViewById(R.id.tvAeronaveResumen)
         val tvEstado: TextView = view.findViewById(R.id.tvEstadoResumen)
         val tvFod: TextView = view.findViewById(R.id.tvFodResumen)
@@ -73,19 +75,20 @@ class ResumenInspeccionesDiariasAdapter(
         val context = holder.itemView.context
 
         holder.tvFecha.text = "Fecha: ${formatearSoloFecha(item.fechaDia)}"
+        holder.tvTurno.text = "🕒 Turno: ${formatearTurnoInspeccion(item.turnoInspeccion)}"
         holder.tvAeronave.text = item.aeronaveTexto
 
         // Estado de completitud: cuántas de las 14 zonas obligatorias se inspeccionaron
         holder.tvEstado.text = if (item.completa) {
-            "✅ Inspección diaria completa (${item.zonasInspeccionadas.size}/14 zonas)"
+            "✅ Inspección de turno completa (${item.zonasInspeccionadas.size}/14 zonas)"
         } else {
-            "⚠️ Inspección diaria incompleta (${item.zonasInspeccionadas.size}/14 zonas)"
+            "⚠️ Inspección de turno incompleta (${item.zonasInspeccionadas.size}/14 zonas)"
         }
 
         holder.tvFod.text = if (item.hayFod) {
             "🚨 Se detectó FOD en ${item.zonasConFod.size} zona(s)"
         } else {
-            "🟢 Sin FOD en esta inspección diaria"
+            "🟢 Sin FOD en esta inspección de turno"
         }
 
         // Color semafórico del fondo de la tarjeta
@@ -165,5 +168,18 @@ class ResumenInspeccionesDiariasAdapter(
             val (anio, mes, dia) = fechaIso.split("-")
             "$dia/$mes/$anio"
         } catch (e: Exception) { fechaIso }
+    }
+
+    /**
+     * Convierte el valor técnico de Supabase en texto claro para el usuario.
+     */
+    private fun formatearTurnoInspeccion(turno: String?): String {
+        return when (turno) {
+            "manana" -> "Mañana"
+            "tarde" -> "Tarde"
+            "noche" -> "Noche"
+            "cuarto_turno" -> "Cuarto turno"
+            else -> "No registrado"
+        }
     }
 }

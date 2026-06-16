@@ -188,11 +188,30 @@ class NuevaInspeccionActivity : AppCompatActivity() {
      * Si la inserción tiene éxito devuelve RESULT_OK para que
      * InspeccionesFragment recargue la lista.
      */
+    /**
+     * Valida los datos e inserta la inspección en Supabase.
+     *
+     * Nueva regla de duplicados:
+     * Ya NO se bloquea una zona por día completo.
+     *
+     * Ahora la base de datos permite una inspección por:
+     * - aeronave
+     * - zona
+     * - fecha_inspeccion_dia
+     * - turno_inspeccion
+     *
+     * Eso significa que una misma zona podrá inspeccionarse una vez por mañana,
+     * una vez por tarde, una vez por noche y una vez por cuarto turno.
+     *
+     * El turno no se calcula en Android.
+     * Lo calcula Supabase automáticamente mediante trigger.
+     */
     private fun guardarInspeccion() {
         val usuario = usuarioLogueado ?: run {
             Toast.makeText(this, "No se ha podido cargar el inspector", Toast.LENGTH_SHORT).show()
             return
         }
+
         val aeronave = aeronaveAsignada ?: run {
             Toast.makeText(this, "No tienes aeronave asignada", Toast.LENGTH_SHORT).show()
             return
@@ -212,29 +231,20 @@ class NuevaInspeccionActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val hoy = java.time.LocalDate.now().toString()
-
-                // Comprobación de zona ya inspeccionada hoy para evitar duplicados
-                val inspeccionesExistentes = supabase.postgrest["inspecciones"]
-                    .select {
-                        filter {
-                            eq("aeronave_id", aeronave.id)
-                            eq("zona", zona)
-                            gte("fecha", "${hoy}T00:00:00")
-                            lte("fecha", "${hoy}T23:59:59")
-                        }
-                    }
-                    .decodeList<Inspeccion>()
-
-                if (inspeccionesExistentes.isNotEmpty()) {
-                    runOnUiThread {
-                        Toast.makeText(this@NuevaInspeccionActivity, "Zona inspeccionada ya", Toast.LENGTH_SHORT).show()
-                        btnGuardar.isEnabled = true
-                        progressBar.isVisible = false
-                    }
-                    return@launch
-                }
-
+                /*
+                 * IMPORTANTE:
+                 * Ya no hacemos aquí una consulta previa por día completo.
+                 *
+                 * Antes:
+                 * - Android buscaba si ya existía la zona hoy.
+                 * - Eso impedía hacer mañana, tarde y noche.
+                 *
+                 * Ahora:
+                 * - Insertamos directamente.
+                 * - Supabase calcula turno_inspeccion.
+                 * - El índice único de Supabase bloquea solo si ya existe
+                 *   esa zona en ese mismo día y ese mismo turno.
+                 */
                 supabase.postgrest["inspecciones"].insert(
                     InsertInspeccionPayload(
                         usuarioId = usuario.id,
@@ -247,19 +257,55 @@ class NuevaInspeccionActivity : AppCompatActivity() {
                 )
 
                 runOnUiThread {
-                    Toast.makeText(this@NuevaInspeccionActivity, "Inspección guardada", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@NuevaInspeccionActivity,
+                        "Inspección guardada",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
                     setResult(RESULT_OK)
                     finish()
                 }
 
             } catch (e: Exception) {
                 runOnUiThread {
-                    Toast.makeText(this@NuevaInspeccionActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    val mensaje = if (esErrorDuplicadoInspeccionPorTurno(e)) {
+                        "Zona inspeccionada ya en este turno"
+                    } else {
+                        "Error: ${e.message}"
+                    }
+
+                    Toast.makeText(
+                        this@NuevaInspeccionActivity,
+                        mensaje,
+                        Toast.LENGTH_LONG
+                    ).show()
+
                     btnGuardar.isEnabled = true
                     progressBar.isVisible = false
                 }
             }
         }
+    }
+
+    /**
+     * Detecta si el error devuelto por Supabase corresponde
+     * al índice único de inspecciones por zona, día y turno.
+     *
+     * El índice se llama:
+     * uq_inspecciones_zona_turno_dia
+     *
+     * Si se produce este error, significa que el usuario está intentando
+     * registrar una zona que ya fue inspeccionada en la misma aeronave,
+     * el mismo día y el mismo turno.
+     */
+    private fun esErrorDuplicadoInspeccionPorTurno(e: Exception): Boolean {
+        val mensaje = e.message.orEmpty().lowercase()
+
+        return mensaje.contains("uq_inspecciones_zona_turno_dia") ||
+                mensaje.contains("duplicate key") ||
+                mensaje.contains("violates unique constraint") ||
+                mensaje.contains("23505")
     }
 
     /** Gestiona el botón de atrás de la ActionBar. */

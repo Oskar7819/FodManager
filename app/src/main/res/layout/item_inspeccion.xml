@@ -46,6 +46,17 @@
             android:textColor="@android:color/darker_gray"
             android:layout_marginBottom="4dp" />
 
+        <!-- Turno operativo de la inspección.
+     Permite ver rápidamente si fue de mañana, tarde, noche o cuarto turno. -->
+        <TextView
+            android:id="@+id/tvTurnoInspeccion"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Turno: No registrado"
+            android:textSize="14sp"
+            android:textColor="@android:color/darker_gray"
+            android:layout_marginBottom="4dp" />
+
         <!-- Línea compacta del inspector: "Nombre Apellidos · Nº empleado" -->
         <TextView
             android:id="@+id/tvInspectorResumen"

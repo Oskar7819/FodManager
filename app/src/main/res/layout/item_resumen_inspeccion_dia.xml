@@ -33,15 +33,29 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Fecha del día en formato "dd/MM/yyyy" en gris secundario -->
+        <!-- Fecha del resumen.
+     Se muestra en negro y negrita porque es un dato importante -->
         <TextView
             android:id="@+id/tvFechaResumen"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Fecha: 19/03/2026"
-            android:textSize="13sp"
-            android:textColor="@android:color/darker_gray"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
             android:layout_marginBottom="4dp" />
+
+        <!-- Turno de la inspección.
+     Ahora el resumen se agrupa por aeronave, día y turno. -->
+        <TextView
+            android:id="@+id/tvTurnoResumen"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🕒 Turno: Mañana"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="8dp" />
 
         <!-- Nombre de la aeronave como título principal de la tarjeta: "Modelo - NumSerie" -->
         <TextView

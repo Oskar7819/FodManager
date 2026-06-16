@@ -39,6 +39,7 @@ import java.util.Calendar
  */
 data class ResumenInspeccionDiaria(
     val fechaDia: String,
+    val turnoInspeccion: String,
     val aeronaveId: Int,
     val aeronaveTexto: String,
     val zonasInspeccionadas: List<String>,
@@ -184,22 +185,36 @@ class ResumenInspeccionesDiariasActivity : AppCompatActivity() {
                         .decodeList<Inspeccion>()
                 }
 
-                // Solo se procesan inspecciones que tengan fecha y aeronave asociada
+                // Solo se procesan inspecciones que tengan fecha o fecha local calculada,
+// aeronave asociada y turno de inspección.
                 val inspeccionesConFecha = inspecciones.filter {
-                    !it.fecha.isNullOrBlank() && it.aeronaveId != null
+                    (!it.fechaInspeccionDia.isNullOrBlank() || !it.fecha.isNullOrBlank())
+                            && it.aeronaveId != null
+                            && !it.turnoInspeccion.isNullOrBlank()
                 }
 
-                // Agrupación por aeronave + día
+// Agrupación por aeronave + día + turno.
+// Antes se agrupaba solo por aeronave y día.
+// Ahora añadimos turno_inspeccion para no mezclar mañana, tarde, noche y cuarto turno.
                 val grupos = inspeccionesConFecha.groupBy { inspeccion ->
-                    "${inspeccion.aeronaveId!!}|${inspeccion.fecha!!.substring(0, 10)}"
+                    val fechaDia = inspeccion.fechaInspeccionDia
+                        ?: inspeccion.fecha!!.substring(0, 10)
+
+                    "${inspeccion.aeronaveId!!}|$fechaDia|${inspeccion.turnoInspeccion}"
                 }
 
                 val resultado = grupos.map { (clave, listaGrupo) ->
-                    val (aeronaveId, fechaDia) = clave.split("|").let { it[0].toInt() to it[1] }
+                    val partes = clave.split("|")
+
+                    val aeronaveId = partes[0].toInt()
+                    val fechaDia = partes[1]
+                    val turnoInspeccion = partes[2]
+
                     val zonasInspeccionadasSet = listaGrupo.map { it.zona }.toSet()
 
                     ResumenInspeccionDiaria(
                         fechaDia = fechaDia,
+                        turnoInspeccion = turnoInspeccion,
                         aeronaveId = aeronaveId,
                         aeronaveTexto = aeronavesMap[aeronaveId] ?: "Sin aeronave",
                         zonasInspeccionadas = zonasObligatorias.filter { it in zonasInspeccionadasSet },
@@ -211,6 +226,7 @@ class ResumenInspeccionesDiariasActivity : AppCompatActivity() {
                 }.sortedWith(
                     compareByDescending<ResumenInspeccionDiaria> { it.fechaDia }
                         .thenBy { it.aeronaveTexto }
+                        .thenBy { ordenTurnoInspeccion(it.turnoInspeccion) }
                 )
 
                 resumenesOriginales.clear()
@@ -319,5 +335,19 @@ class ResumenInspeccionesDiariasActivity : AppCompatActivity() {
             return true
         }
         return super.onOptionsItemSelected(item)
+    }
+
+
+    /**
+     * Da un orden lógico a los turnos dentro de un mismo día.
+     */
+    private fun ordenTurnoInspeccion(turno: String?): Int {
+        return when (turno) {
+            "manana" -> 1
+            "tarde" -> 2
+            "noche" -> 3
+            "cuarto_turno" -> 4
+            else -> 99
+        }
     }
 }
